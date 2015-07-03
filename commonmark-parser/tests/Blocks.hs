@@ -12,6 +12,7 @@ import           Text.CommonMark.TestUtils.Spec
 
 import           Control.Monad
 import           Data.Generics
+import Unsafe.Coerce
 
 import           Data.Maybe
 import qualified Data.Text                       as T
@@ -34,6 +35,6 @@ normalizeDoc = everywhere (mkT stripHtmlBlock) . everywhere (mkT changeBullet)
           stripHtmlBlock a = a
 
 blockTests :: [SpecTest T.Text (Doc T.Text)]
-blockTests = filter (isNothing . docInline . testOut) $
+blockTests = unsafeCoerce $ filter (isNothing . docInline . testOut) $
                 [t { testOut = nodeToDoc $ commonmarkToNode [optNormalize]
                                          $ testIn t } | t <- spec]

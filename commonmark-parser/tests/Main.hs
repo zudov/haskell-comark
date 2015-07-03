@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Main where
 
 import           Blocks
@@ -21,5 +20,5 @@ main = do
         testBlock
 
         describe "Properties" $ do
-            it "Any sequence of characters is a valid input" $ do
-                property $ (\t -> commonmarkToDoc def (pack t) `deepseq` True)
+            prop "Any sequence of characters is a valid input"
+                (\t -> commonmarkToDoc def (pack t) `deepseq` True)
