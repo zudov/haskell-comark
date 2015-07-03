@@ -1,0 +1,11 @@
+resolver: nightly-2015-06-23
+packages:
+    - ./commonmark
+    - ./commonmark-ast
+    - ./commonmark-parser
+    - ./commonmark-html
+    - location: ./commonmark-testutils
+      extra-dep: true
+
+extra-deps:
+    - html5-entity-0.2.0.3
