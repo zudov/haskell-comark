@@ -204,7 +204,7 @@ closeContainer = do
         (Container ct' cs' : rs) ->
           case viewr cs'' of
             (zs :> b) | isBlankLine b -> put $ ContainerStack (Container ct' els) rs
-                where els | Seq.null zs = cs' |> C (Container li zs)
+                where els | null zs = cs' |> C (Container li zs)
                           | otherwise   = cs' |> C (Container li zs) |> b
 
             _ -> put $ ContainerStack (Container ct' (cs' |> C top)) rs
