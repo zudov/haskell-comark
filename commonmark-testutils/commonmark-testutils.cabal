@@ -24,7 +24,7 @@ library
   build-depends:       base               >=4.7 && <4.9
                      , containers
                      , text
-                     , cmark              >= 0.3.4
+                     , cmark              >= 0.4.0.1
                      , aeson
                      , bytestring
                      , template-haskell
