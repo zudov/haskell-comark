@@ -381,7 +381,12 @@ pReference = do
     lab <- pLinkLabel <* char ':'
     guard $ isJust $ T.find (not . isWhitespace) lab
     scanWhitespaceNL
-    url <- pLinkDest
-    tit <- optional (pWhitespace *> pLinkTitle)
-    skipWhile (isWhitespace <&&> (/= '\r') <&&> (/= '\n')) <* (lineEnding <|> endOfInput)
-    return (lab, url, tit)
+    url <- pLinkDest <* skipWhitespaceNoNL
+    titleOnNewLine <- isJust <$> optional lineEnding
+    skipWhitespaceNoNL
+    title <- if titleOnNewLine
+             then optional (pLinkTitle <* skipWhitespaceNoNL
+                                       <* (endOfInput <|> lineEnding))
+             else optional pLinkTitle <* skipWhitespaceNoNL
+                                      <* (endOfInput <|> lineEnding)
+    return (lab, url, title)

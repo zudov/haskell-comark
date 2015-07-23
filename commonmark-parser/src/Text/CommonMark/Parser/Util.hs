@@ -102,6 +102,9 @@ scanWhitespaceNL =
 scanWhitespaceNoNL :: Scanner
 scanWhitespaceNoNL = skipWhile1 (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
 
+skipWhitespaceNoNL :: Scanner
+skipWhitespaceNoNL = skipWhile (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
+
 -- | [unicode whitespace] as in spec
 isUnicodeWhitespace :: Char -> Bool
 isUnicodeWhitespace = isSpace
