@@ -605,5 +605,6 @@ parseBullet = do
 parseListNumber :: Parser ListType
 parseListNumber = do
     num  <- decimal
+    guard $ num < 10^9
     wrap <- choice [Period <$ scanChar '.', Paren <$ scanChar ')']
     return $ Ordered wrap num
