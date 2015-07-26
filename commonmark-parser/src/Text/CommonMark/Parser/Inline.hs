@@ -77,10 +77,7 @@ pText :: Parser (Inlines Text)
 pText = str <$> takeWhile1 (not . isSpecial)
 
 pFallback :: Parser (Inlines Text)
-pFallback = str <$> choice
-    [ char '\t' *> pure "   "
-    , T.singleton <$> satisfy isSpecial
-    ]
+pFallback = str <$> (T.singleton <$> satisfy isSpecial)
 
 isSpecial :: Char -> Bool
 isSpecial = inClass "\\`*_[]!&<\t\n\r "

@@ -345,7 +345,7 @@ extractText _ = mempty
 processLines :: Text -> (Container, ReferenceMap)
 processLines t = evalRWS (mapM_ processLine lns >> closeStack) () initState
   where
-    lns = zip [1..] $ map (T.tabFilter 4) $ T.lines' $ T.replace "\0" "\xFFFD" t
+    lns = zip [1..] $ T.lines' $ T.replace "\0" "\xFFFD" t
     initState = ContainerStack (Container Document mempty) []
 
 -- The main block-parsing function.
