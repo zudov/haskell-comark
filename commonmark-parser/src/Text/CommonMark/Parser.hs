@@ -591,15 +591,13 @@ listMarkerWidth (Ordered _ n)
 -- Parse a bullet and return list type.
 parseBullet :: Parser ListType
 parseBullet = do
-  c <- satisfy (\c -> c == '+' || c == '*' || c == '-')
-  unless (c == '+') $
-      nfb (count 2 (scanSpaces >> skip (== c)) >>
-             skipWhile (\x -> x == ' ' || x == c) >> endOfInput) -- hrule
-  return $ Bullet $ bulletChar c
-  where bulletChar '+' = Plus
-        bulletChar '-' = Minus
-        bulletChar '*' = Asterisk
-        bulletChar _   = error "Shouldn't happen"
+  (bulletType, bulletChar) <- ((Plus,) <$> satisfy (== '+'))
+                          <|> ((Minus,) <$> satisfy (== '-'))
+                          <|> ((Asterisk,) <$> satisfy (== '*'))
+  unless (bulletType == Plus) $
+      nfb (count 2 (scanSpaces >> skip (== bulletChar)) >>
+             skipWhile (\x -> x == ' ' || x == bulletChar) >> endOfInput) -- hrule
+  return $ Bullet bulletType
 
 -- Parse a list number marker and return list type.
 parseListNumber :: Parser ListType
