@@ -28,7 +28,7 @@ nodeToBlock (Node _ (HTML_BLOCK html) []) = HtmlBlock $ stripEnd html
 nodeToBlock (Node _ (HTML_BLOCK _) _)     = error "HTML node has children"
 nodeToBlock (Node _ (CODE_BLOCK i c) []) = CodeBlock (monoidToMaybe i) c
 nodeToBlock (Node _ CODE_BLOCK{} _)    = error "CODE_BLOCK has children"
-nodeToBlock (Node _ (HEADING l) ns) = Header l $ S.fromList $ map nodeToInline ns
+nodeToBlock (Node _ (HEADING l) ns) = Heading l $ S.fromList $ map nodeToInline ns
 nodeToBlock (Node _ (LIST ListAttributes{..}) ns) =
     List listType' listTight $ map itemToBlocks ns
     where listType' = case (listType,listDelim) of

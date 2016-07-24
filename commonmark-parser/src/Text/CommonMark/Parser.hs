@@ -137,7 +137,7 @@ containerContinue c = case containerType c of
     Reference -> nfb (scanBlankline <|> (scanNonindentSpace *> (scanReference
                                                             <|> scanBlockquoteStart
                                                             <|> scanTBreakLine))
-                                    <|> (() <$ parseAtxHeaderStart))
+                                    <|> (() <$ parseAtxHeadingStart))
     _              -> pure ()
 {-# INLINE containerContinue #-}
 
@@ -162,8 +162,8 @@ verbatimContainerStart lastLineIsText = choice
 type Leaf = GenLeaf Text
 data GenLeaf t = TextLine         t
                | BlankLine        t
-               | ATXHeader    Int t
-               | SetextHeader Int t
+               | ATXHeading    Int t
+               | SetextHeading Int t
                | SetextToken  Int t
                | Rule
                deriving (Show, Functor)
@@ -259,9 +259,9 @@ processElts opts (L _lineNumber lf : rest) =
     -- Blanks at outer level are ignored:
     BlankLine{} -> processElts opts rest
 
-    -- Headers:
-    ATXHeader lvl t -> Header lvl (parseInlines opts t) <| processElts opts rest
-    SetextHeader lvl t -> Header lvl (parseInlines opts t) <| processElts opts rest
+    -- Headings:
+    ATXHeading lvl t -> Heading lvl (parseInlines opts t) <| processElts opts rest
+    SetextHeading lvl t -> Heading lvl (parseInlines opts t) <| processElts opts rest
     SetextToken _ _ -> error "Setext token wasn't converted to setext header"
 
     -- Horizontal rule:
@@ -414,9 +414,9 @@ processLine (lineNumber, txt) = do
                                     else TextLine setextText
              (cs' :> L _ (TextLine t)) -> -- replace last text line with setext header
                put $ ContainerStack (Container ct
-                        (cs' |> L lineNumber (SetextHeader lev $ T.strip t))) rest
+                        (cs' |> L lineNumber (SetextHeading lev $ T.strip t))) rest
                -- Note: the following case should not occur, since
-               -- we don't add a SetextHeader leaf unless lastLineIsText.
+               -- we don't add a SetextHeading leaf unless lastLineIsText.
              _ -> error "setext header line without preceding text line"
 
        -- otherwise, close all the unmatched containers, add the new
@@ -465,7 +465,7 @@ textLineOrBlank = consolidate <$> takeText
 -- Parse a leaf node.
 leaf :: Bool -> Parser Leaf
 leaf lastLineIsText = scanNonindentSpace *> choice
-    [ ATXHeader <$> parseAtxHeaderStart <*> parseAtxHeaderContent
+    [ ATXHeading <$> parseAtxHeadingStart <*> parseAtxHeadingContent
     , guard lastLineIsText *> parseSetextToken
     , Rule <$ scanTBreakLine
     , textLineOrBlank
@@ -489,16 +489,16 @@ scanBlockquoteStart = scanChar '>' >> option () (scanChar ' ')
 -- headers without preceding blank lines, requiring the space
 -- avoids accidentally capturing a line like `#8 toggle bolt` as
 -- a header.
-parseAtxHeaderStart :: Parser Int
-parseAtxHeaderStart = do
+parseAtxHeadingStart :: Parser Int
+parseAtxHeadingStart = do
   _ <- char '#'
   hashes <- upToCountChars 5 (== '#')
   -- hashes must be followed by space unless empty header:
   notFollowedBy (skip (/= ' '))
   return $ T.length hashes + 1
 
-parseAtxHeaderContent :: Parser Text
-parseAtxHeaderContent = T.strip . removeATXSuffix <$> takeText
+parseAtxHeadingContent :: Parser Text
+parseAtxHeadingContent = T.strip . removeATXSuffix <$> takeText
   where removeATXSuffix t =
           case dropTrailingHashes of
                  t' | T.null t' -> t'
