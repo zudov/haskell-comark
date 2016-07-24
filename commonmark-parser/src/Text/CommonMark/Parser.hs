@@ -15,10 +15,11 @@ import           Control.Monad.Trans.RWS.Strict
 import           Data.Foldable                     (toList)
 import           Data.List                         (intercalate)
 import qualified Data.Map                          as M
-import           Data.Maybe                        (mapMaybe)
+import           Data.Maybe                        (mapMaybe, isNothing, isJust)
 import           Data.Monoid
 import           Data.Sequence                     (Seq, ViewR (..), singleton,
                                                     viewr, (<|), (><), (|>))
+import           Data.Char
 import qualified Data.Sequence                     as Seq
 import qualified Data.Set                          as Set
 import           Data.Text.Extended                (Text)
@@ -92,7 +93,7 @@ data ContainerType = Document
                                 , info        :: Maybe Text
                                 }
                    | IndentedCode
-                   | RawHtmlBlock
+                   | RawHtmlBlock Condition
                    | Reference
                    deriving (Show, Eq)
 
@@ -131,7 +132,6 @@ containerContinue c = case containerType c of
     BlockQuote     -> scanNonindentSpace *> scanBlockquoteStart
     IndentedCode   -> scanIndentSpace
     FencedCode{..} -> scanSpacesUpToColumn startColumn
-    RawHtmlBlock   -> nfb scanBlankline
     ListItem{..}   -> scanBlankline <|> (() <$ count padding (char ' '))
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> nfb (scanBlankline <|> (scanNonindentSpace *> (scanReference
@@ -154,7 +154,7 @@ verbatimContainerStart :: Bool -> Parser ContainerType
 verbatimContainerStart lastLineIsText = choice
    [ scanNonindentSpace *> parseCodeFence
    , guard (not lastLineIsText) *> scanNonindentSpace *> (IndentedCode <$ char ' ' <* nfb scanBlankline)
-   , RawHtmlBlock <$ scanHtmlBlockStart
+   , RawHtmlBlock <$> pHtmlBlockStart
    , guard (not lastLineIsText) *> scanNonindentSpace *> (Reference <$ scanReference)
    ]
 
@@ -329,7 +329,7 @@ processElts opts (C (Container ct cs) : rest) =
               (cbs, rest') = span (isIndentedCode <||> isBlankLine)
                                   (C (Container ct cs) : rest)
 
-    RawHtmlBlock -> HtmlBlock txt <| processElts opts rest
+    RawHtmlBlock c -> HtmlBlock txt <| processElts opts rest
         where txt = T.unlines (map extractText (toList cs))
 
     -- References have already been taken into account in the reference map,
@@ -369,7 +369,9 @@ processLine (lineNumber, txt) = do
   -- the container type at the top of the stack (ct):
   case ct of
     -- If it's a verbatim line container, add the line.
-    RawHtmlBlock{} | numUnmatched == 0 -> addLeaf lineNumber (TextLine t')
+    RawHtmlBlock c | numUnmatched == 0 -> do
+      addLeaf lineNumber (TextLine t')
+      when (isRight $ parse (blockEnd c) t') $ closeContainer
     IndentedCode   | numUnmatched == 0 -> addLeaf lineNumber (TextLine t')
     FencedCode{ fence = fence' } | numUnmatched == 0 ->
       if isRight $ parse scanClosing t'
@@ -541,13 +543,80 @@ parseCodeFence = do
 
 -- Scan the start of an HTML block:  either an HTML tag or an
 -- HTML comment, with no indentation.
-scanHtmlBlockStart :: Scanner
-scanHtmlBlockStart = discard $ lookAhead $ scanNonindentSpace *> choice
-    [ isBlockHtmlTag `mfilter` incompleteTag
-    , "<!--", "<?", "<!", "<![CDATA["]
-    where tagName = T.cons <$> satisfy (inClass "A-Za-z")
-                           <*> takeWhile (inClass "A-Za-z0-9")
-          incompleteTag = char '<' *> discardOpt (char '/') *> tagName
+pHtmlBlockStart :: Parser Condition
+pHtmlBlockStart = lookAhead $
+  choice $ flip map conditions $ \c -> c <$ blockStart c
+
+conditions = [condition1, condition2, condition3, condition4, condition5, condition6, condition7]
+
+data Condition = Condition { blockStart :: Parser ()
+                           , blockEnd   :: Parser ()
+                           }
+
+instance Show Condition where
+  show _ = "Condition{}"
+
+instance Eq Condition where
+  _ == _ = True
+
+lineContains terms = do
+  line <- T.toCaseFold <$> takeTill ((== '\r') <||> (== '\n'))
+  guard $ any (`T.isInfixOf` line) terms
+
+
+condition1 = Condition
+  { blockStart = do
+      choice $ map stringCaseless ["<script", "<pre", "<style"]
+      discard pWhitespace <|> discard ">" <|> lineEnding
+      return ()
+  , blockEnd = lineContains ["</script>", "</pre>", "</style>"]
+  }
+
+condition2 = Condition
+  { blockStart = discard $ "<!--"
+  , blockEnd = discard $ lineContains ["-->"]
+  }
+
+condition3 = Condition
+  { blockStart = discard $ "<?"
+  , blockEnd = discard $ lineContains ["?>"]
+  }
+
+condition4 = Condition
+  { blockStart = discard $ "<!" *> satisfy isAsciiUpper
+  , blockEnd = discard $ lineContains [">"]
+  }
+
+condition5 = Condition
+  { blockStart = discard $ "<![CDATA["
+  , blockEnd = discard $ lineContains ["]]>"]
+  }
+
+condition6 = Condition
+  { blockStart = do
+      "<" <|> "</"
+      tag <- takeTill (isWhitespace <||> (== '\n') <||> (== '\r') <||> (== '/') <||> (== '>'))
+      guard $ isBlockHtmlTag (T.toLower tag)
+      discard pWhitespace <|> lineEnding <|> discard ">" <|> discard "/>"
+  , blockEnd = scanBlankline
+  }
+
+condition7 = Condition
+  { blockStart = openTag *> discard (optional (discard pWhitespace <|> lineEnding))
+  , blockEnd = scanBlankline
+  }
+  where
+    tagName = satisfy (inClass "A-Za-z") *> skipWhile (inClass "A-Za-z0-9")
+    attr = skipWhitespace *> attrName *> optional attrValueSpec
+    attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
+    attrValueSpec = optional skipWhitespace *> char '=' *>
+                    optional skipWhitespace *> attrValue
+    attrValue = discard unquoted <|> discard singleQuoted <|> discard doubleQuoted
+    unquoted = skipWhile1 (notInClass " \"'=<>`")
+    singleQuoted = "'" *> skipWhile (/= '\'') *> "'"
+    doubleQuoted = "\"" *> skipWhile (/= '"') *> "\""
+    openTag = "<" *> tagName *> many attr *> optional skipWhitespace
+                                          *> optional "/" *> ">"
 
 -- List of block level tags for HTML 5.
 isBlockHtmlTag :: Text -> Bool

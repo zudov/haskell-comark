@@ -256,7 +256,7 @@ pEmphLinkDelim = pEmphDelimToken '*' <|> pEmphDelimToken '_' <|> pLinkOpener
 pEmphLink :: ParseOptions -> Parser (Inlines Text)
 pEmphLink opts = do
   d <- pEmphLinkDelim
-  foldMap unToken . processEmphasis <$> go (Seq.singleton d)
+  foldMap unToken . processEmphTokens <$> go (Seq.singleton d)
   where
     go delimStack =
         ((char ']' >> lookForLinkOrImage delimStack >>= go)
@@ -277,14 +277,14 @@ pEmphLink opts = do
                                         pReferenceLink constr content (refLabel opener))
               case mLinkOrImage of
                 Nothing -> fallback
-                Just linkOrImage -> pure (addInlines (deactivator pre) linkOrImage)
+                Just linkOrImage -> pure (addInlines (deactivating pre) linkOrImage)
           where constr = case openerType opener of
                            LinkOpener  -> Link
                            ImageOpener -> Image
-                deactivator = case openerType opener of
-                           LinkOpener -> fmap deactivate
-                           ImageOpener -> id
-                content = foldMap unToken $ processEmphasis (InlineToken c <| post)
+                deactivating = case openerType opener of
+                                   LinkOpener -> fmap deactivate
+                                   ImageOpener -> id
+                content = foldMap unToken $ processEmphTokens (InlineToken c <| post)
                 fallback = pure (addInlines pre (unToken opener) >< addInline post closer)
         closer = Str "]"
     pInlineLink constr content = do
@@ -298,8 +298,8 @@ pEmphLink opts = do
       maybe mzero (pure . singleton . uncurry (constr content))
                   (parseOptLinkReferences opts =<< ref)
 
-    processEmphasis :: Seq Token -> Seq Token
-    processEmphasis = Seq.reverse . foldl (flip processEmphToken) Seq.empty
+processEmphTokens :: Seq Token -> Seq Token
+processEmphTokens = Seq.reverse . foldl (flip processEmphToken) Seq.empty
 
 processEmphToken :: Token -> Seq Token -> Seq Token
 processEmphToken closing@EmphDelimToken{} stack

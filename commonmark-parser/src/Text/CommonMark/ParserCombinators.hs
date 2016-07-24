@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase   #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
 module Text.CommonMark.ParserCombinators (
     Position(..)
@@ -28,6 +29,7 @@ module Text.CommonMark.ParserCombinators (
   , skipWhile
   , skipWhile1
   , string
+  , stringCaseless
   , scan
   , lookAhead
   , notFollowedBy
@@ -328,6 +330,14 @@ string s = Parser $ \st ->
      then success (advance st s) s
      else failure st "string"
 {-# INLINE string #-}
+
+stringCaseless :: Text -> Parser Text
+stringCaseless (T.toCaseFold -> s) = Parser $ \st ->
+  if T.toCaseFold s `T.isPrefixOf` T.toCaseFold (subject st)
+     then success (advance st s) s
+     else failure st "stringCaseless"
+
+{-# INLINE stringCaseless #-}
 
 scan :: s -> (s -> Char -> Maybe s) -> Parser Text
 scan s0 f = Parser $ go s0 []
