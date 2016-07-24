@@ -20,15 +20,15 @@ nodeToDoc (Node _ DOCUMENT ns) = Doc $ S.fromList $ map nodeToBlock ns
 nodeToDoc _ = error "Top-level node must be DOCUMENT"
 
 nodeToBlock :: Node -> Block Text
-nodeToBlock (Node _ HRULE [])       = HRule
-nodeToBlock (Node _ HRULE _)        = error "HRULE node has children"
+nodeToBlock (Node _ THEMATIC_BREAK []) = HRule
+nodeToBlock (Node _ THEMATIC_BREAK _)        = error "HRULE node has children"
 nodeToBlock (Node _ PARAGRAPH ns)   = Para $ S.fromList $ map nodeToInline ns
 nodeToBlock (Node _ BLOCK_QUOTE ns) = Quote $ S.fromList $ map nodeToBlock ns
-nodeToBlock (Node _ (HTML html) []) = HtmlBlock $ stripEnd html
-nodeToBlock (Node _ (HTML _) _)     = error "HTML node has children"
+nodeToBlock (Node _ (HTML_BLOCK html) []) = HtmlBlock $ stripEnd html
+nodeToBlock (Node _ (HTML_BLOCK _) _)     = error "HTML node has children"
 nodeToBlock (Node _ (CODE_BLOCK i c) []) = CodeBlock (monoidToMaybe i) c
-nodeToBlock (Node _ (CODE_BLOCK{}) _)    = error "CODE_BLOCK has children"
-nodeToBlock (Node _ (HEADER l) ns) = Header l $ S.fromList $ map nodeToInline ns
+nodeToBlock (Node _ CODE_BLOCK{} _)    = error "CODE_BLOCK has children"
+nodeToBlock (Node _ (HEADING l) ns) = Header l $ S.fromList $ map nodeToInline ns
 nodeToBlock (Node _ (LIST ListAttributes{..}) ns) =
     List listType' listTight $ map itemToBlocks ns
     where listType' = case (listType,listDelim) of
@@ -48,8 +48,8 @@ nodeToInline (Node _ SOFTBREAK []) = SoftBreak
 nodeToInline (Node _ SOFTBREAK _) = error "SOFTBREAK has children"
 nodeToInline (Node _ LINEBREAK []) = HardBreak
 nodeToInline (Node _ LINEBREAK _) = error "LINEBREAK has children"
-nodeToInline (Node _ (INLINE_HTML html) []) = RawHtml html
-nodeToInline (Node _ (INLINE_HTML _) _) = error "INLINE_HTML has children"
+nodeToInline (Node _ (HTML_INLINE html) []) = RawHtml html
+nodeToInline (Node _ (HTML_INLINE _) _) = error "INLINE_HTML has children"
 nodeToInline (Node _ (CODE c) []) = Code c
 nodeToInline (Node _ (CODE _) _)  = error "CODE has children"
 nodeToInline (Node _ EMPH ns) = Emph $ S.fromList $ map nodeToInline ns
