@@ -136,7 +136,7 @@ containerContinue c = case containerType c of
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> nfb (scanBlankline <|> (scanNonindentSpace *> (scanReference
                                                             <|> scanBlockquoteStart
-                                                            <|> scanHRuleLine))
+                                                            <|> scanTBreakLine))
                                     <|> (() <$ parseAtxHeaderStart))
     _              -> pure ()
 {-# INLINE containerContinue #-}
@@ -265,7 +265,7 @@ processElts opts (L _lineNumber lf : rest) =
     SetextToken _ _ -> error "Setext token wasn't converted to setext header"
 
     -- Horizontal rule:
-    Rule -> HRule <| processElts opts rest
+    Rule -> ThematicBreak <| processElts opts rest
 
 processElts opts (C (Container ct cs) : rest) =
   case ct of
@@ -409,7 +409,7 @@ processLine (lineNumber, txt) = do
        ([], SetextToken lev setextText) | numUnmatched == 0 ->
            case viewr cs of
              ((viewr -> _ :> L _ (TextLine _)) :> L _ (TextLine _)) ->
-               addLeaf lineNumber $ if isRight $ parse scanHRuleLine setextText
+               addLeaf lineNumber $ if isRight $ parse scanTBreakLine setextText
                                     then Rule
                                     else TextLine setextText
              (cs' :> L _ (TextLine t)) -> -- replace last text line with setext header
@@ -467,7 +467,7 @@ leaf :: Bool -> Parser Leaf
 leaf lastLineIsText = scanNonindentSpace *> choice
     [ ATXHeader <$> parseAtxHeaderStart <*> parseAtxHeaderContent
     , guard lastLineIsText *> parseSetextToken
-    , Rule <$ scanHRuleLine
+    , Rule <$ scanTBreakLine
     , textLineOrBlank
     ]
 
@@ -520,8 +520,8 @@ parseSetextToken = fmap (uncurry SetextToken) $ withConsumed $ do
 -- Scan a horizontal rule line: "...three or more hyphens, asterisks,
 -- or underscores on a line by themselves. If you wish, you may use
 -- spaces between the hyphens or asterisks."
-scanHRuleLine :: Scanner
-scanHRuleLine = do
+scanTBreakLine :: Scanner
+scanTBreakLine = do
   c <- satisfy (\c -> c == '*' || c == '_' || c == '-')
   _ <- count 2 $ scanSpaces >> skip (== c)
   skipWhile (\x -> x == ' ' || x == c)

@@ -20,8 +20,8 @@ nodeToDoc (Node _ DOCUMENT ns) = Doc $ S.fromList $ map nodeToBlock ns
 nodeToDoc _ = error "Top-level node must be DOCUMENT"
 
 nodeToBlock :: Node -> Block Text
-nodeToBlock (Node _ THEMATIC_BREAK []) = HRule
-nodeToBlock (Node _ THEMATIC_BREAK _)        = error "HRULE node has children"
+nodeToBlock (Node _ THEMATIC_BREAK []) = ThematicBreak
+nodeToBlock (Node _ THEMATIC_BREAK _)  = error "THEMATIC_BREAK node has children"
 nodeToBlock (Node _ PARAGRAPH ns)   = Para $ S.fromList $ map nodeToInline ns
 nodeToBlock (Node _ BLOCK_QUOTE ns) = Quote $ S.fromList $ map nodeToBlock ns
 nodeToBlock (Node _ (HTML_BLOCK html) []) = HtmlBlock $ stripEnd html

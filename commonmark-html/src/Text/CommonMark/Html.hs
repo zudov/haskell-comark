@@ -96,7 +96,7 @@ renderBlock (Header n is) = tag hx (renderInlines is)
 renderBlock (CodeBlock mInfo t) = tag "pre" $ tagWith args "code" $ escapedText t
     where args = maybeToList (("class",) . lang <$> mInfo)
           lang = ("language-" <>) . T.takeWhile (/= ' ')
-renderBlock HRule     = voidTag "hr"
+renderBlock ThematicBreak = voidTag "hr"
 renderBlock (HtmlBlock t) = unescapedText t
 renderBlock (Quote bs) = tag "blockquote" $ renderBlocks bs
 renderBlock (List listType tight items) = case listType of

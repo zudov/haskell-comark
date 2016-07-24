@@ -45,7 +45,7 @@ type Blocks t = Seq (Block t)
 
 -- | Block elements
 data Block t =
-    HRule -- ^ Horizontal rule
+    ThematicBreak -- ^ Thematic break
   | Header Int (Inlines t) -- ^ Header: level, sequnce of inlines that define content
   | CodeBlock (Maybe t) t -- ^ Block of code: info string, literal content
   | HtmlBlock t -- ^ Raw HTML Block
