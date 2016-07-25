@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase   #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Text.CommonMark.ParserCombinators (
     Position(..)
   , Parser
@@ -35,16 +36,13 @@ module Text.CommonMark.ParserCombinators (
   , notFollowedBy
   , option
   , foldP
-  , many1
   , manyTill
-  , many1Till
+  , someTill
   , sepBy1
   , sepEndBy1
   , sepStartEndBy1
   , skipMany
   , skipMany1
-  , count
-  , discard
   , discardOpt
   , decimal
   , hexadecimal
@@ -52,7 +50,7 @@ module Text.CommonMark.ParserCombinators (
 import           Control.Applicative
 import           Control.Monad
 import           Data.Bits           (Bits, shiftL, (.|.))
-import           Data.Char           (ord)
+import qualified Data.Char           as Char
 import qualified Data.Set            as Set
 import           Data.String
 import           Data.Text           (Text)
@@ -92,9 +90,8 @@ advance = T.foldl' go
                                          }
                     , lastChar = Just c }
 
-newtype Parser a = Parser {
-  evalParser :: ParserState -> Either ParseError (ParserState, a)
-  }
+newtype Parser a
+  = Parser { evalParser :: ParserState -> Either ParseError (ParserState, a) }
 
 -- | Returns the text that was consumed by a parser alongside with its result
 withConsumed :: Parser a -> Parser (a,Text)
@@ -372,20 +369,13 @@ option :: Alternative f => a -> f a -> f a
 option x p = p <|> pure x
 {-# INLINE option #-}
 
-discard :: Applicative f => f a -> f ()
-discard p = p *> pure ()
-
 discardOpt :: Alternative f => f a -> f ()
-discardOpt p = option () (discard p)
+discardOpt p = option () (void p)
 
-many1 :: Alternative f => f a -> f [a]
-many1 p = liftA2 (:) p (many p)
-{-# INLINE many1 #-}
-
-many1Till :: Alternative f => f a -> f b -> f [a]
-many1Till p end = liftA2 (:) p go
+someTill :: Alternative f => f a -> f b -> f [a]
+someTill p end = liftA2 (:) p go
   where go = (end *> pure []) <|> liftA2 (:) p go
-{-# INLINE many1Till #-}
+{-# INLINE someTill #-}
 
 manyTill :: Alternative f => f a -> f b -> f [a]
 manyTill p end = go
@@ -411,18 +401,10 @@ skipMany1 :: Alternative f => f a -> f ()
 skipMany1 p = p *> skipMany p
 {-# INLINE skipMany1 #-}
 
-count :: Monad m => Int -> m a -> m [a]
-count n p = sequence (replicate n p)
-{-# INLINE count #-}
-
 -- | Parse and decode an unsigned decimal number.
 decimal :: Integral a => Parser a
-decimal = T.foldl' step 0 `fmap` takeWhile1 isDecimal
-  where step a c = a * 10 + fromIntegral (ord c - 48)
-
-isDecimal :: Char -> Bool
-isDecimal c = c >= '0' && c <= '9'
-{-# INLINE isDecimal #-}
+decimal = T.foldl' step 0 `fmap` takeWhile1 Char.isDigit
+  where step a c = a * 10 + fromIntegral (Char.ord c - 48)
 
 hexadecimal :: (Integral a, Bits a) => Parser a
 hexadecimal = T.foldl' step 0 `fmap` takeWhile1 isHexDigit
@@ -433,4 +415,4 @@ hexadecimal = T.foldl' step 0 `fmap` takeWhile1 isHexDigit
     step a c | w >= 48 && w <= 57  = (a `shiftL` 4) .|. fromIntegral (w - 48)
              | w >= 97             = (a `shiftL` 4) .|. fromIntegral (w - 87)
              | otherwise           = (a `shiftL` 4) .|. fromIntegral (w - 55)
-      where w = ord c
+      where w = Char.ord c

@@ -132,7 +132,7 @@ containerContinue c = case containerType c of
     BlockQuote     -> scanNonindentSpace *> scanBlockquoteStart
     IndentedCode   -> scanIndentSpace
     FencedCode{..} -> scanSpacesUpToColumn startColumn
-    ListItem{..}   -> scanBlankline <|> (() <$ count padding (char ' '))
+    ListItem{..}   -> scanBlankline <|> (replicateM_ padding (char ' '))
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> nfb (scanBlankline <|> (scanNonindentSpace *> (scanReference
                                                             <|> scanBlockquoteStart
@@ -473,7 +473,7 @@ leaf lastLineIsText = scanNonindentSpace *> choice
 -- Scanners
 
 scanReference :: Scanner
-scanReference = discard $ lookAhead (char '[')
+scanReference = void $ lookAhead (char '[')
 
 -- Scan the beginning of a blockquote:  up to three spaces
 -- indent (outside of this scanner), the `>` character, and an optional space.
@@ -521,8 +521,8 @@ parseSetextToken = fmap (uncurry SetextToken) $ withConsumed $ do
 -- spaces between the hyphens or asterisks."
 scanTBreakLine :: Scanner
 scanTBreakLine = do
-  c <- satisfy (\c -> c == '*' || c == '_' || c == '-')
-  _ <- count 2 $ scanSpaces >> skip (== c)
+  c <- satisfy ((== '*') <||> (== '_') <||> (== '-'))
+  replicateM_ 2 $ scanSpaces *> skip (== c)
   skipWhile (\x -> x == ' ' || x == c)
   endOfInput
 
@@ -566,29 +566,29 @@ lineContains terms = do
 condition1 = Condition
   { blockStart = do
       choice $ map stringCaseless ["<script", "<pre", "<style"]
-      discard pWhitespace <|> discard ">" <|> lineEnding
+      void pWhitespace <|> void ">" <|> lineEnding
       return ()
   , blockEnd = lineContains ["</script>", "</pre>", "</style>"]
   }
 
 condition2 = Condition
-  { blockStart = discard $ "<!--"
-  , blockEnd = discard $ lineContains ["-->"]
+  { blockStart = void "<!--"
+  , blockEnd = void $ lineContains ["-->"]
   }
 
 condition3 = Condition
-  { blockStart = discard $ "<?"
-  , blockEnd = discard $ lineContains ["?>"]
+  { blockStart = void "<?"
+  , blockEnd = void $ lineContains ["?>"]
   }
 
 condition4 = Condition
-  { blockStart = discard $ "<!" *> satisfy isAsciiUpper
-  , blockEnd = discard $ lineContains [">"]
+  { blockStart = void $ "<!" *> satisfy isAsciiUpper
+  , blockEnd = void $ lineContains [">"]
   }
 
 condition5 = Condition
-  { blockStart = discard $ "<![CDATA["
-  , blockEnd = discard $ lineContains ["]]>"]
+  { blockStart = void $ "<![CDATA["
+  , blockEnd = void $ lineContains ["]]>"]
   }
 
 condition6 = Condition
@@ -596,12 +596,12 @@ condition6 = Condition
       "<" <|> "</"
       tag <- takeTill (isWhitespace <||> (== '\n') <||> (== '\r') <||> (== '/') <||> (== '>'))
       guard $ isBlockHtmlTag (T.toLower tag)
-      discard pWhitespace <|> lineEnding <|> discard ">" <|> discard "/>"
+      void pWhitespace <|> lineEnding <|> void ">" <|> void "/>"
   , blockEnd = scanBlankline
   }
 
 condition7 = Condition
-  { blockStart = openTag *> discard (optional (discard pWhitespace <|> lineEnding))
+  { blockStart = openTag *> void (optional (void pWhitespace <|> lineEnding))
   , blockEnd = scanBlankline
   }
   where
@@ -610,7 +610,7 @@ condition7 = Condition
     attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
     attrValueSpec = optional skipWhitespace *> char '=' *>
                     optional skipWhitespace *> attrValue
-    attrValue = discard unquoted <|> discard singleQuoted <|> discard doubleQuoted
+    attrValue = void unquoted <|> void singleQuoted <|> void doubleQuoted
     unquoted = skipWhile1 (notInClass " \"'=<>`")
     singleQuoted = "'" *> skipWhile (/= '\'') *> "'"
     doubleQuoted = "\"" *> skipWhile (/= '"') *> "\""
@@ -640,7 +640,7 @@ parseListMarker afterListItem = do
   -- or indented code.  otherwise it's the length of the
   -- whitespace between the list marker and the following text:
   contentPadding <- (1 <$ scanBlankline)
-                <|> (1 <$ (skip (==' ') *> lookAhead (count 4 (char ' '))))
+                <|> (1 <$ (skip (==' ') *> lookAhead (replicateM 4 (char ' '))))
                 <|> (T.length <$> takeWhile (==' '))
   -- text can't immediately follow the list marker:
   guard $ contentPadding > 0
@@ -663,7 +663,7 @@ parseBullet = do
                           <|> ((Minus,) <$> satisfy (== '-'))
                           <|> ((Asterisk,) <$> satisfy (== '*'))
   unless (bulletType == Plus) $
-      nfb (count 2 (scanSpaces >> skip (== bulletChar)) >>
+      nfb (replicateM 2 (scanSpaces >> skip (== bulletChar)) >>
              skipWhile (\x -> x == ' ' || x == bulletChar) >> endOfInput) -- hrule
   return $ Bullet bulletType
 

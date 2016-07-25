@@ -123,14 +123,15 @@ pCode = do
 pHtml :: Parser (Inlines Text)
 pHtml = singleton . RawHtml <$> consumedBy (choice scanners)
   where
-    scanners = [ discard openTag, discard closeTag, discard comment
-               , discard instruct, discard declar, discard cdata]
+    scanners = [ void openTag, void closeTag, void comment
+               , void instruct, void declar, void cdata
+               ]
     tagName = satisfy (inClass "A-Za-z") *> skipWhile (inClass "A-Za-z0-9")
     attr = skipWhitespace *> attrName *> optional attrValueSpec
     attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
     attrValueSpec = optional skipWhitespace *> char '=' *>
                     optional skipWhitespace *> attrValue
-    attrValue = discard unquoted <|> discard singleQuoted <|> discard doubleQuoted
+    attrValue = void unquoted <|> void singleQuoted <|> void doubleQuoted
     unquoted = skipWhile1 (notInClass " \"'=<>`")
     singleQuoted = "'" *> skipWhile (/= '\'') *> "'"
     doubleQuoted = "\"" *> skipWhile (/= '"') *> "\""
@@ -345,7 +346,7 @@ single constructor ils | Seq.null ils = mempty
                        | otherwise    = singleton (constructor ils)
 
 pLinkLabel :: Parser Text
-pLinkLabel = char '[' *> (T.concat <$> many1Till chunk (char ']'))
+pLinkLabel = char '[' *> (T.concat <$> someTill chunk (char ']'))
   where chunk = regChunk <|> bracketChunk <|> backslashChunk
         regChunk = takeWhile1 (`notElem` ("[]\\" :: [Char]))
         bracketChunk = char '\\' *> ("[" <|> "]")
@@ -356,7 +357,7 @@ pLinkDest = do
   inPointy <- (True <$ char '<') <|> pure False
   if inPointy
      then T.pack <$> manyTill (pSatisfy (`notElem` ("\r\n" :: [Char]))) (char '>')
-     else T.concat <$> many1 (regChunk <|> parenChunk)
+     else T.concat <$> some (regChunk <|> parenChunk)
   where regChunk = takeWhile1 (notInClass " \n\r()\\&" <&&> (not . isControl))
                 <|> pEntityText <|> pBackslashedChar
         parenChunk = parenthesize . T.concat <$> (char '(' *>

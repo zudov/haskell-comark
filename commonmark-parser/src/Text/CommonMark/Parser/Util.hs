@@ -3,6 +3,7 @@ module Text.CommonMark.Parser.Util where
 
 import           Control.Applicative
 import           Control.Bool
+import           Control.Monad
 import           Data.Char
 import qualified Data.Map                          as M
 import           Data.Monoid
@@ -18,8 +19,7 @@ type Scanner = Parser ()
 
 -- | A newline (U+000A), carriage return (U+000D), or carriage return + newline.
 lineEnding :: Scanner
-lineEnding = (discard $ char '\n') <|> (discard $ "\r\n")
-                                   <|> (discard $ char '\r')
+lineEnding = void ("\n" <|> "\r\n" <|> "\r")
 
 nfb :: Parser a -> Parser ()
 nfb = notFollowedBy
@@ -40,21 +40,21 @@ scanChars c = skipMany (scanChar c)
 
 -- Scan four spaces.
 scanIndentSpace :: Scanner
-scanIndentSpace = () <$ count 4 (skip (==' '))
+scanIndentSpace = replicateM_ 4 (scanChar ' ')
 
 scanSpacesToColumn :: Int -> Scanner
 scanSpacesToColumn col = do
   currentCol <- column <$> getPosition
-  case col - currentCol of
-       n | n >= 1 -> () <$ (count n (skip (==' ')))
-         | otherwise -> return ()
+  let distance = col - currentCol
+  when (distance >= 1)
+    $ replicateM_ distance (scanChar ' ')
 
 scanSpacesUpToColumn :: Int -> Scanner
 scanSpacesUpToColumn col = do
   currentCol <- column <$> getPosition
-  case col - currentCol of
-       n | n >= 1 -> () <$ (count n (discardOpt $ skip (==' ')))
-         | otherwise -> return ()
+  let distance = col - currentCol
+  when (distance >= 1)
+    $ replicateM_ distance (discardOpt $ scanChar ' ')
 
 -- Scan 0-3 spaces.
 scanNonindentSpace :: Scanner
@@ -81,7 +81,7 @@ countSpaces = T.length <$> takeWhile (== ' ')
 -- Scan 0 or more spaces, and optionally a newline
 -- and more spaces.
 scanSpnl :: Scanner
-scanSpnl = scanSpaces *> option () (char '\n' *> scanSpaces)
+scanSpnl = scanSpaces *> discardOpt (char '\n' *> scanSpaces)
 
 -- | A [whitespace character] as in spec
 isWhitespace :: Char -> Bool
@@ -96,8 +96,10 @@ skipWhitespace = skipWhile1 isWhitespace
 
 -- | optional scanWhitespace (including up to one line ending)
 scanWhitespaceNL :: Scanner
-scanWhitespaceNL =
-    option () scanWhitespaceNoNL *> option () (lineEnding *> option () scanWhitespaceNoNL)
+scanWhitespaceNL = do
+ discardOpt scanWhitespaceNoNL
+ discardOpt lineEnding
+ discardOpt scanWhitespaceNoNL
 
 scanWhitespaceNoNL :: Scanner
 scanWhitespaceNoNL = skipWhile1 (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
@@ -153,4 +155,5 @@ isValidScheme s = S.member (T.toLower s) $ S.fromList
     ,"proxy","psyc","query","res","resource","rmi","rsync","rtmp","secondlife"
     ,"sftp","sgn","skype","smb","soldat","spotify","ssh","steam","svn"
     ,"teamspeak","things","udp","unreal","ut2004","ventrilo","view-source"
-    ,"webcal","wtai","wyciwyg","xfire","xri","ymsgr"]
+    ,"webcal","wtai","wyciwyg","xfire","xri","ymsgr"
+    ]
