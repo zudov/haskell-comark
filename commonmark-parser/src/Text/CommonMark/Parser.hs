@@ -451,11 +451,10 @@ tryNewContainers afterListItem lastLineIsText offset t =
   where newContainers = do
           getPosition >>= \pos -> setPosition pos{ column = offset + 1 }
           regContainers <- many (containerStart afterListItem lastLineIsText)
-          verbatimContainers <- option []
-                            $ count 1 (verbatimContainerStart lastLineIsText)
-          if null verbatimContainers
-             then (regContainers,) <$> leaf lastLineIsText
-             else (regContainers ++ verbatimContainers,) <$> textLineOrBlank
+          optional (verbatimContainerStart lastLineIsText) >>= \case
+            Just verbatimContainer -- FIXME: Very inefficient append
+              -> (regContainers ++ [verbatimContainer],) <$> textLineOrBlank
+            Nothing -> (regContainers,) <$> leaf lastLineIsText
 
 textLineOrBlank :: Parser Leaf
 textLineOrBlank = consolidate <$> takeText
