@@ -4,6 +4,7 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TupleSections     #-}
 {-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Text.CommonMark.Parser
     ( commonmarkToDoc
     ) where
@@ -132,7 +133,7 @@ containerContinue c = case containerType c of
     BlockQuote     -> scanNonindentSpace *> scanBlockquoteStart
     IndentedCode   -> scanIndentSpace
     FencedCode{..} -> scanSpacesUpToColumn startColumn
-    ListItem{..}   -> scanBlankline <|> (replicateM_ padding (char ' '))
+    ListItem{..}   -> scanBlankline <|> (tabCrusher *> replicateM_ padding (char ' '))
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> nfb (scanBlankline <|> (scanNonindentSpace *> (scanReference
                                                             <|> scanBlockquoteStart
@@ -153,7 +154,10 @@ containerStart afterListItem _lastLineIsText = choice
 verbatimContainerStart :: Bool -> Parser ContainerType
 verbatimContainerStart lastLineIsText = choice
    [ scanNonindentSpace *> parseCodeFence
-   , guard (not lastLineIsText) *> scanNonindentSpace *> (IndentedCode <$ char ' ' <* nfb scanBlankline)
+   , do guard (not lastLineIsText)
+        scanIndentSpace
+        nfb scanBlankline
+        pure IndentedCode
    , RawHtmlBlock <$> pHtmlBlockStart
    , guard (not lastLineIsText) *> scanNonindentSpace *> (Reference <$ scanReference)
    ]
@@ -429,6 +433,18 @@ processLine (lineNumber, txt) = do
              (FencedCode{}:_,  BlankLine{}) -> return ()
              _ -> addLeaf lineNumber lf
 
+tabCrusher :: Parser ()
+tabCrusher = do
+  p <- getPosition
+  replacing (go (column p - 1) "")
+  where
+    go cnt acc = do
+      c <- peekChar
+      case c of
+        Just ' '  -> char ' '  *> go (cnt + 1) (acc <> " ")
+        Just '\t' -> char '\t' *> go (cnt + 4 - (cnt `mod` 4)) (acc <> T.replicate (4 - (cnt `mod` 4)) " ")
+        _    -> pure acc
+
 -- Try to match the scanners corresponding to any currently open containers.
 -- Return remaining text after matching scanners, plus the number of open
 -- containers whose scanners did not match.  (These will be closed unless
@@ -478,7 +494,7 @@ scanReference = void $ lookAhead (char '[')
 -- Scan the beginning of a blockquote:  up to three spaces
 -- indent (outside of this scanner), the `>` character, and an optional space.
 scanBlockquoteStart :: Scanner
-scanBlockquoteStart = scanChar '>' >> option () (scanChar ' ')
+scanBlockquoteStart = scanChar '>' *> tabCrusher *> discardOpt (scanChar ' ')
 
 -- Parse the sequence of `#` characters that begins an ATX
 -- header, and return the number of characters.  We require
@@ -493,7 +509,7 @@ parseAtxHeadingStart = do
   _ <- char '#'
   hashes <- upToCountChars 5 (== '#')
   -- hashes must be followed by space unless empty header:
-  notFollowedBy (skip (/= ' '))
+  notFollowedBy (skip ((/= ' ') <&&> (/= '\t')))
   return $ T.length hashes + 1
 
 parseAtxHeadingContent :: Parser Text
@@ -522,8 +538,8 @@ parseSetextToken = fmap (uncurry SetextToken) $ withConsumed $ do
 scanTBreakLine :: Scanner
 scanTBreakLine = do
   c <- satisfy ((== '*') <||> (== '_') <||> (== '-'))
-  replicateM_ 2 $ scanSpaces *> skip (== c)
-  skipWhile (\x -> x == ' ' || x == c)
+  replicateM_ 2 $ skipWhile ((== ' ') <||> (== '\t')) *> skip (== c)
+  skipWhile ((== ' ') <||> (== '\t') <||> (== c))
   endOfInput
 
 -- Parse an initial code fence line, returning
@@ -538,7 +554,8 @@ parseCodeFence = do
   endOfInput
   return FencedCode { startColumn = col
                     , fence = cs
-                    , info = rawattr }
+                    , info = rawattr
+                    }
 
 -- Scan the start of an HTML block:  either an HTML tag or an
 -- HTML comment, with no indentation.
@@ -634,14 +651,16 @@ isBlockHtmlTag name = T.toLower name `Set.member` Set.fromList
 --  \\-- markerPadding
 parseListMarker :: Bool -> Parser ContainerType
 parseListMarker afterListItem = do
+  tabCrusher
   markerPadding <- if afterListItem then countSpaces else countNonindentSpace
   ty <- parseBullet <|> parseListNumber
   -- padding is 1 if list marker followed by a blank line
   -- or indented code.  otherwise it's the length of the
   -- whitespace between the list marker and the following text:
+  tabCrusher
   contentPadding <- (1 <$ scanBlankline)
-                <|> (1 <$ (skip (==' ') *> lookAhead (replicateM 4 (char ' '))))
-                <|> (T.length <$> takeWhile (==' '))
+                <|> (1 <$ (skip (==' ') *> lookAhead scanIndentSpace))
+                <|> countSpaces
   -- text can't immediately follow the list marker:
   guard $ contentPadding > 0
   return ListItem { itemType = ty
@@ -659,18 +678,18 @@ listMarkerWidth (Ordered _ n)
 -- Parse a bullet and return list type.
 parseBullet :: Parser ListType
 parseBullet = do
-  (bulletType, bulletChar) <- ((Plus,) <$> satisfy (== '+'))
-                          <|> ((Minus,) <$> satisfy (== '-'))
+  (bulletType, bulletChar) <- ((Plus,)     <$> satisfy (== '+'))
+                          <|> ((Minus,)    <$> satisfy (== '-'))
                           <|> ((Asterisk,) <$> satisfy (== '*'))
   unless (bulletType == Plus) $
-      nfb (replicateM 2 (scanSpaces >> skip (== bulletChar)) >>
-             skipWhile (\x -> x == ' ' || x == bulletChar) >> endOfInput) -- hrule
+      nfb (replicateM 2 (skipWhile ((== ' ') <||> (== '\t')) >> skip (== bulletChar)) >>
+             skipWhile (\x -> x == '\t' || x == ' ' || x == bulletChar) >> endOfInput) -- hrule
   return $ Bullet bulletType
 
 -- Parse a list number marker and return list type.
 parseListNumber :: Parser ListType
 parseListNumber = do
-    num  <- decimal
+    num :: Int <- decimal
     guard $ num < 10^9
     wrap <- choice [Period <$ scanChar '.', Paren <$ scanChar ')']
     return $ Ordered wrap num

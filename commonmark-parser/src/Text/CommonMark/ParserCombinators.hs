@@ -29,6 +29,7 @@ module Text.CommonMark.ParserCombinators (
   , skip
   , skipWhile
   , skipWhile1
+  , replacing
   , string
   , stringCaseless
   , scan
@@ -78,17 +79,18 @@ data ParserState = ParserState { subject  :: Text
 advance :: ParserState -> Text -> ParserState
 advance = T.foldl' go
   where go :: ParserState -> Char -> ParserState
-        go st c = st{ subject = T.drop 1 (subject st)
-                    , position = case c of
-                        '\n' -> Position { line = line (position st) + 1
-                                         , column = 1
-                                         , point = point (position st) + 1
-                                         }
-                        _    -> Position { line   = line   (position st)
-                                         , column = column (position st) + 1
-                                         , point  = point (position st) + 1
-                                         }
-                    , lastChar = Just c }
+        go st c = st { subject = T.drop 1 (subject st)
+                     , position = case c of
+                         '\n' -> Position { line = line (position st) + 1
+                                          , column = 1
+                                          , point = point (position st) + 1
+                                          }
+                         _    -> Position { line   = line   (position st)
+                                          , column = column (position st) + 1
+                                          , point  = point (position st) + 1
+                                          }
+                     , lastChar = Just c
+                     }
 
 newtype Parser a
   = Parser { evalParser :: ParserState -> Either ParseError (ParserState, a) }
@@ -176,15 +178,17 @@ infixl 5 <?>
 
 parse :: Parser a -> Text -> Either ParseError a
 parse p t =
-  fmap snd $ evalParser p ParserState{ subject  = t
-                                     , position = Position 1 1 1
-                                     , lastChar = Nothing }
+  fmap snd $ evalParser p ParserState { subject  = t
+                                      , position = Position 1 1 1
+                                      , lastChar = Nothing
+                                      }
 
 parseWithUnconsumed :: Parser a -> Text -> Either ParseError (a,Text)
 parseWithUnconsumed p t = fmap (\(st,res) -> (res, subject st))
                         $ evalParser p ParserState { subject = t
                                                    , position = Position 1 1 1
-                                                   , lastChar = Nothing }
+                                                   , lastChar = Nothing
+                                                   }
 
 failure :: ParserState -> String -> Either ParseError (ParserState, a)
 failure st msg = Left $ ParseError (position st) msg
@@ -193,6 +197,9 @@ failure st msg = Left $ ParseError (position st) msg
 success :: ParserState -> a -> Either ParseError (ParserState, a)
 success st x = Right (st, x)
 {-# INLINE success #-}
+
+getState :: Parser ParserState
+getState = Parser (\st -> success st st)
 
 satisfy :: (Char -> Bool) -> Parser Char
 satisfy f = Parser g
@@ -215,6 +222,16 @@ peekChar = Parser $ \st ->
 peekLastChar :: Parser (Maybe Char)
 peekLastChar = Parser $ \st -> success st (lastChar st)
 {-# INLINE peekLastChar #-}
+
+-- | Takes a parser that returns a 'Text', runs that
+--   parser consuming some input and then prepends the
+--   result to the rest of subject.
+replacing :: Parser Text -> Parser ()
+replacing p = do
+  s0 <- getState
+  t <- p
+  s1Subject <- subject <$> getState
+  Parser $ \_ -> success s0 { subject = T.append t s1Subject } ()
 
 notAfter :: (Char -> Bool) -> Parser ()
 notAfter f = do

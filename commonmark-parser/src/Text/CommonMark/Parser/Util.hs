@@ -9,7 +9,7 @@ import qualified Data.Map                          as M
 import           Data.Monoid
 import qualified Data.Set                          as S
 import           Data.Text                         (Text)
-import qualified Data.Text                         as T
+import qualified Data.Text.Extended                as T
 import           Prelude                           hiding (takeWhile)
 
 import           Text.CommonMark.ParserCombinators
@@ -38,9 +38,13 @@ scanChar c = skip (== c)
 scanChars :: Char -> Scanner
 scanChars c = skipMany (scanChar c)
 
--- Scan four spaces.
+-- Scan tab or four spaces.
 scanIndentSpace :: Scanner
-scanIndentSpace = replicateM_ 4 (scanChar ' ')
+scanIndentSpace = do
+  spaceCount <- countNonindentSpace
+  moreSpaceCount <- 4 <$ char '\t'
+                <|> 1 <$ char ' '
+  when (spaceCount + moreSpaceCount < 4) mzero
 
 scanSpacesToColumn :: Int -> Scanner
 scanSpacesToColumn col = do
