@@ -13,7 +13,7 @@ import           Control.Applicative
 import           Control.Bool
 import           Control.Monad
 import           Control.Monad.Trans.RWS.Strict
-import           Data.Foldable                     (toList)
+import           Data.Foldable
 import           Data.List                         (intercalate)
 import qualified Data.Map                          as M
 import           Data.Maybe                        (mapMaybe, isNothing, isJust)
@@ -411,18 +411,22 @@ processLine (lineNumber, txt) = do
 
        -- if it's a setext header line and the top container has a textline
        -- as last child, add a setext header:
-       ([], SetextToken lev setextText) | numUnmatched == 0 ->
-           case viewr cs of
-             ((viewr -> _ :> L _ (TextLine _)) :> L _ (TextLine _)) ->
-               addLeaf lineNumber $ if isRight $ parse scanTBreakLine setextText
-                                    then Rule
-                                    else TextLine setextText
-             (cs' :> L _ (TextLine t)) -> -- replace last text line with setext header
-               put $ ContainerStack (Container ct
-                        (cs' |> L lineNumber (SetextHeading lev $ T.strip t))) rest
+       ([], SetextToken lev _setextText) | numUnmatched == 0 ->
+           case Seq.spanr isTextLine cs of
+             (textlines, cs') -- gather all preceding textlines and put them in the header
+               | not (Seq.null textlines)
+               -> put $ ContainerStack
+                    (Container ct
+                      (cs' |> L lineNumber
+                        (SetextHeading
+                           lev
+                           (T.strip $ T.unlines
+                                    $ fmap extractText
+                                    $ toList textlines))))
+                   rest
                -- Note: the following case should not occur, since
                -- we don't add a SetextHeading leaf unless lastLineIsText.
-             _ -> error "setext header line without preceding text line"
+               | otherwise -> error "setext header line without preceding text lines"
 
        -- The end tag can occur on the same line as the start tag.
        (RawHtmlBlock condition : _, TextLine t)
