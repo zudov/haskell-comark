@@ -295,7 +295,7 @@ pEmphLink opts = do
       char ')'
       pure $ singleton $ constr content dest title
     pReferenceLink constr content lbl = do
-      ref <- (Just <$> (scanSpnl *> pLinkLabel)) <|> (lbl <$ (optional (scanSpnl *> "[]")))
+      ref <- (Just <$> pLinkLabel) <|> (lbl <$ optional "[]")
       maybe mzero (pure . singleton . uncurry (constr content))
                   (parseOptLinkReferences opts =<< ref)
 
