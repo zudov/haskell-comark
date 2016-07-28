@@ -356,7 +356,7 @@ pLinkDest :: Parser Text
 pLinkDest = do
   inPointy <- (True <$ char '<') <|> pure False
   if inPointy
-     then T.pack <$> manyTill (pSatisfy (`notElem` ("\r\n" :: [Char]))) (char '>')
+     then T.pack <$> manyTill (pSatisfy (`notElem` ("\r\n " :: [Char]))) (char '>')
      else T.concat <$> some (regChunk <|> parenChunk)
   where regChunk = takeWhile1 (notInClass " \n\r()\\&" <&&> (not . isControl))
                 <|> pEntityText <|> pBackslashedChar
