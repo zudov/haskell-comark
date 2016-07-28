@@ -350,7 +350,7 @@ pLinkLabel = char '[' *> (T.concat <$> someTill chunk (char ']'))
   where chunk = regChunk <|> bracketChunk <|> backslashChunk
         regChunk = takeWhile1 (`notElem` ("[]\\" :: [Char]))
         bracketChunk = char '\\' *> ("[" <|> "]")
-        backslashChunk = "\\"
+        backslashChunk = "\\\\"
 
 pLinkDest :: Parser Text
 pLinkDest = do
