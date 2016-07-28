@@ -2,9 +2,11 @@
 module Inline where
 
 import           Data.Text                       (Text)
+import qualified Data.Text as Text
 import           Test.Hspec
 
 import           Data.Maybe
+import qualified Data.Sequence as Seq
 
 import           Text.CommonMark.Parser
 import           Text.CommonMark.Parser.Options
@@ -22,8 +24,8 @@ testInline = do
         forM_ inlineTests $ \SpecTest{..} -> do
            it (show testNumber ++ ": " ++ show testSection) $ do
                let actual   = commonmarkToDoc def {parseOptNormalize = True} testIn
-                   expected = nodeToDoc $ commonmarkToNode [optNormalize]
-                                                           testIn
+                   expected = normalizeDoc $ nodeToDoc $ commonmarkToNode [optNormalize]
+                                                                          testIn
                case docInline (unsafeCoerce actual) of
                    Just is -> toList is `shouldBe`
                                     toList (fromJust (docInline expected))
@@ -32,6 +34,20 @@ testInline = do
 inlineTests :: [SpecTest Text Text]
 inlineTests = filter (isJust . docInline . nodeToDoc
                              . commonmarkToNode [] . testIn) spec
+
+normalizeDoc :: Doc Text -> Doc Text
+normalizeDoc (Doc blocks) = Doc $ fmap m blocks
+  where
+    m (Heading a b) = Heading a $ (dropEmptyStrs . normalize) b
+    m (Para a) = Para $ (dropEmptyStrs . normalize) a
+    m (Quote a) = Quote $ fmap m a
+    m (List a b c) = List a b $ fmap (fmap m) c
+    m a = a
+
+    dropEmptyStrs = Seq.filter (not . isEmptyStr)
+
+    isEmptyStr (Str a) = Text.null a
+    isEmptyStr _ = False
 
 unDoc :: Doc Text -> [Block Text]
 unDoc (Doc bs) = toList bs
