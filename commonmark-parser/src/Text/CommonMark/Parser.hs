@@ -28,6 +28,7 @@ import qualified Data.Text.Extended                as T
 import           Prelude                           hiding (takeWhile)
 
 import           Data.Either
+import           Data.Function ((&))
 
 import           Text.CommonMark.Parser.Inline
 import           Text.CommonMark.Parser.Options
@@ -158,7 +159,7 @@ verbatimContainerStart lastLineIsText = choice
         scanIndentSpace
         nfb scanBlankline
         pure IndentedCode
-   , RawHtmlBlock <$> pHtmlBlockStart
+   , RawHtmlBlock <$> pHtmlBlockStart lastLineIsText
    , guard (not lastLineIsText) *> scanNonindentSpace *> (Reference <$ scanReference)
    ]
 
@@ -423,6 +424,12 @@ processLine (lineNumber, txt) = do
                -- we don't add a SetextHeading leaf unless lastLineIsText.
              _ -> error "setext header line without preceding text line"
 
+       -- The end tag can occur on the same line as the start tag.
+       (RawHtmlBlock condition : _, TextLine t)
+         | Right () <- parse (blockEnd condition) t
+         -> do addContainer (RawHtmlBlock condition)
+               addLeaf lineNumber (TextLine t)
+               closeContainer
        -- otherwise, close all the unmatched containers, add the new
        -- containers, and finally add the new leaf:
        (ns, lf) -> do -- close unmatched containers, add new ones
@@ -557,11 +564,19 @@ parseCodeFence = do
                     , info = rawattr
                     }
 
--- Scan the start of an HTML block:  either an HTML tag or an
--- HTML comment, with no indentation.
-pHtmlBlockStart :: Parser Condition
-pHtmlBlockStart = lookAhead $
-  choice $ flip map conditions $ \c -> c <$ blockStart c
+pHtmlBlockStart :: Bool -> Parser Condition
+pHtmlBlockStart lastLineIsText = lookAhead $ do
+  discardOpt scanNonindentSpace
+  choice starters
+  where
+    starters = [ condition1 <$ blockStart condition1
+               , condition2 <$ blockStart condition2
+               , condition3 <$ blockStart condition3
+               , condition4 <$ blockStart condition4
+               , condition5 <$ blockStart condition5
+               , condition6 <$ blockStart condition6
+               , condition7 <$ if lastLineIsText then mzero else blockStart condition7
+               ]
 
 conditions = [condition1, condition2, condition3, condition4, condition5, condition6, condition7]
 
@@ -583,8 +598,7 @@ lineContains terms = do
 condition1 = Condition
   { blockStart = do
       choice $ map stringCaseless ["<script", "<pre", "<style"]
-      void pWhitespace <|> void ">" <|> lineEnding
-      return ()
+      void pWhitespace <|> void ">" <|> lineEnding <|> endOfInput
   , blockEnd = lineContains ["</script>", "</pre>", "</style>"]
   }
 
@@ -610,7 +624,7 @@ condition5 = Condition
 
 condition6 = Condition
   { blockStart = do
-      "<" <|> "</"
+      "</" <|> "<"
       tag <- takeTill (isWhitespace <||> (== '\n') <||> (== '\r') <||> (== '/') <||> (== '>'))
       guard $ isBlockHtmlTag (T.toLower tag)
       void pWhitespace <|> lineEnding <|> void ">" <|> void "/>"
@@ -618,11 +632,14 @@ condition6 = Condition
   }
 
 condition7 = Condition
-  { blockStart = openTag *> void (optional (void pWhitespace <|> lineEnding))
+  { blockStart = (openTag <|> closeTag) *> (void pWhitespace <|> endOfInput)
   , blockEnd = scanBlankline
   }
   where
-    tagName = satisfy (inClass "A-Za-z") *> skipWhile (inClass "A-Za-z0-9")
+    tagName = do
+      c <- satisfy (inClass "A-Za-z")
+      cs <- takeWhile ((== '-') <||> inClass "A-Za-z0-9")
+      guard (T.cons c cs `notElem` ["script", "style", "pre"])
     attr = skipWhitespace *> attrName *> optional attrValueSpec
     attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
     attrValueSpec = optional skipWhitespace *> char '=' *>
@@ -633,16 +650,20 @@ condition7 = Condition
     doubleQuoted = "\"" *> skipWhile (/= '"') *> "\""
     openTag = "<" *> tagName *> many attr *> optional skipWhitespace
                                           *> optional "/" *> ">"
+    closeTag = "</" *> tagName *> optional skipWhitespace *> ">"
 
 -- List of block level tags for HTML 5.
 isBlockHtmlTag :: Text -> Bool
 isBlockHtmlTag name = T.toLower name `Set.member` Set.fromList
-    ["article","header","aside","hgroup","blockquote","hr","iframe","body"
-    ,"li","map","button","object","canvas","ol","caption","output","col","p"
-    ,"colgroup","pre","dd","progress","div","section","dl","table","td","dt"
-    ,"tbody","embed","textarea","fieldset","tfoot","figcaption","th","figure"
-    ,"thead","footer","tr","form","ul","h1","h2","h3","h4","h5","h6","video"
-    ,"script","style"]
+  [ "address", "article", "aside", "base", "basefont", "blockquote"
+  , "body", "caption", "center", "col", "colgroup", "dd", "details"
+  , "dialog", "dir", "div", "dl", "dt", "fieldset", "figcaption"
+  , "figure", "footer", "form", "frame", "frameset", "h1", "head"
+  , "header", "hr", "html", "iframe", "legend", "li", "link", "main"
+  , "menu", "menuitem", "meta", "nav", "noframes", "ol", "optgroup"
+  , "option", "p", "param", "section", "source", "summary", "table"
+  , "tbody", "td", "tfoot", "th", "thead", "title", "tr", "track", "ul"
+  ]
 
 -- Parse a list marker and return the list type.
 --

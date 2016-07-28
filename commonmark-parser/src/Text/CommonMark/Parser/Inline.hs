@@ -126,7 +126,7 @@ pHtml = singleton . RawHtml <$> consumedBy (choice scanners)
     scanners = [ void openTag, void closeTag, void comment
                , void instruct, void declar, void cdata
                ]
-    tagName = satisfy (inClass "A-Za-z") *> skipWhile (inClass "A-Za-z0-9")
+    tagName = satisfy (inClass "A-Za-z") *> skipWhile ((== '-') <||> (inClass "A-Za-z0-9"))
     attr = skipWhitespace *> attrName *> optional attrValueSpec
     attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
     attrValueSpec = optional skipWhitespace *> char '=' *>
