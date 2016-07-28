@@ -167,7 +167,7 @@ pEntityText = char '&' *> ((char '#' *> (decEntity <|> hexEntity)) <|> namedEnti
 pAutolink :: Parser (Inlines Text)
 pAutolink = char '<' *> (pUrl <|> pEmail) <* char '>'
     where pUrl = do
-              scheme <- isValidScheme `mfilter` takeWhile1 (/= ':')
+              scheme <- pScheme
               _ <- char ':'
               chars <- takeTill ((isAscii <&&> (isWhitespace <||> isControl))
                                     <||> (== '>') <||> (== '<'))
@@ -177,6 +177,12 @@ pAutolink = char '<' *> (pUrl <|> pEmail) <* char '>'
               email <- isValidEmail `mfilter` takeWhile1 (/= '>')
               return $ singleton $ Link (str email)
                                         ("mailto:" <> email) Nothing
+
+pScheme :: Parser Text
+pScheme = do
+  a <- satisfy (isAscii <&&> isLetter)
+  as <- takeWhile1 ((isAscii <&&> (isLetter <||> isDigit)) <||> (== '+') <||> (== '.') <||> (== '-'))
+  mfilter ((<= 32) . T.length) $ pure $ T.cons a as
 
 -- [ Links and Images ] --------------------------------------------------------
 
