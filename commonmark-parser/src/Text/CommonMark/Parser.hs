@@ -395,7 +395,7 @@ processLine (lineNumber, txt) = do
        -- some unmatched containers:
        ([], TextLine t)
            | numUnmatched > 0
-           , (_ :> L _ (TextLine _)) <- viewr cs
+           , _ :> L _ TextLine{} <- viewr cs
            , ct /= IndentedCode
            -> addLeaf lineNumber (TextLine t)
 
@@ -405,9 +405,19 @@ processLine (lineNumber, txt) = do
        -- "    with two lines"
        (IndentedCode : _, TextLine t)
            | numUnmatched > 0
-           , (_ :> L _ (TextLine _)) <- viewr cs
-           , ListItem _ _ <- ct
-           -> addLeaf lineNumber (TextLine (T.strip t))
+           , _ :> L _ TextLine{} <- viewr cs
+           , ListItem{} <- ct
+           -> addLeaf lineNumber $ TextLine $ T.strip t
+
+       -- A special case: Lazy continuaation of a quote looking like
+       -- indented code e.g:
+       -- "> foo"
+       -- "    - bar"
+       (IndentedCode : _, TextLine t)
+         | numUnmatched > 0
+         , _ :> L _ TextLine{} <- viewr cs
+         , BlockQuote{} <- ct
+         -> addLeaf lineNumber $ TextLine $ T.strip t
 
        -- if it's a setext header line and the top container has a textline
        -- as last child, add a setext header:
@@ -423,9 +433,9 @@ processLine (lineNumber, txt) = do
                            (T.strip $ T.unlines
                                     $ fmap extractText
                                     $ toList textlines))))
-                   rest
-               -- Note: the following case should not occur, since
-               -- we don't add a SetextHeading leaf unless lastLineIsText.
+                    rest
+                 -- Note: the following case should not occur, since
+                 -- we don't add a SetextHeading leaf unless lastLineIsText.
                | otherwise -> error "setext header line without preceding text lines"
 
        -- The end tag can occur on the same line as the start tag.
