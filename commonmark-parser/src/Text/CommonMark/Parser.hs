@@ -145,9 +145,9 @@ containerContinue c = case containerType c of
 
 -- Defines parsers that open new containers.
 containerStart :: Bool -> Bool -> Parser ContainerType
-containerStart afterListItem _lastLineIsText = choice
+containerStart afterListItem lastLineIsText = choice
     [ scanNonindentSpace *> pure BlockQuote <* scanBlockquoteStart
-    , parseListMarker afterListItem
+    , parseListMarker afterListItem lastLineIsText
     ]
 
 -- Defines parsers that open new verbatim containers (containers
@@ -684,11 +684,11 @@ isBlockHtmlTag name = T.toLower name `Set.member` Set.fromList
 -- "  1.  Content"
 --  ^^  ^^-- contentPadding
 --  \\-- markerPadding
-parseListMarker :: Bool -> Parser ContainerType
-parseListMarker afterListItem = do
+parseListMarker :: Bool -> Bool -> Parser ContainerType
+parseListMarker afterListItem lastLineIsText = do
   tabCrusher
   markerPadding <- if afterListItem then countSpaces else countNonindentSpace
-  ty <- parseBullet <|> parseListNumber
+  ty <- parseBullet <|> parseListNumber lastLineIsText
   -- padding is 1 if list marker followed by a blank line
   -- or indented code.  otherwise it's the length of the
   -- whitespace between the list marker and the following text:
@@ -722,9 +722,11 @@ parseBullet = do
   return $ Bullet bulletType
 
 -- Parse a list number marker and return list type.
-parseListNumber :: Parser ListType
-parseListNumber = do
+parseListNumber :: Bool -> Parser ListType
+parseListNumber lastLineIsText = do
     num :: Int <- decimal
+    when lastLineIsText $
+      guard $ num == 1
     guard $ num < 10^9
     wrap <- choice [Period <$ scanChar '.', Paren <$ scanChar ')']
     return $ Ordered wrap num
