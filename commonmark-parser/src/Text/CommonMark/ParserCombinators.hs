@@ -1,7 +1,7 @@
-{-# LANGUAGE LambdaCase   #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE ViewPatterns          #-}
 module Text.CommonMark.ParserCombinators (
     Position(..)
   , Parser

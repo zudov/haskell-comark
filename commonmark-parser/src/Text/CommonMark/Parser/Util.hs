@@ -7,7 +7,6 @@ import           Control.Monad
 import           Data.Char
 import qualified Data.Map                          as M
 import           Data.Monoid
-import qualified Data.Set                          as S
 import           Data.Text                         (Text)
 import qualified Data.Text.Extended                as T
 import           Prelude                           hiding (takeWhile)

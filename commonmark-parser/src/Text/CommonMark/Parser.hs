@@ -1,34 +1,33 @@
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TupleSections     #-}
-{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE DeriveFunctor       #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 module Text.CommonMark.Parser
     ( commonmarkToDoc
     ) where
+
+import           Prelude                           hiding (takeWhile)
 
 import           Control.Applicative
 import           Control.Bool
 import           Control.Monad
 import           Control.Monad.Trans.RWS.Strict
+import           Data.Char
+import           Data.Either
 import           Data.Foldable
 import           Data.List                         (intercalate)
 import qualified Data.Map                          as M
-import           Data.Maybe                        (mapMaybe, isNothing, isJust)
+import           Data.Maybe                        (mapMaybe)
 import           Data.Monoid
-import           Data.Sequence                     (Seq, ViewR(..), singleton, ViewL(..),
-                                                    viewr, viewl, (<|), (><), (|>))
-import           Data.Char
+import           Data.Sequence                     (Seq, ViewL (..), ViewR (..),
+                                                    singleton, viewl, viewr,
+                                                    (<|), (><), (|>))
 import qualified Data.Sequence                     as Seq
 import qualified Data.Set                          as Set
 import           Data.Text.Extended                (Text)
 import qualified Data.Text.Extended                as T
-import           Prelude                           hiding (takeWhile)
-
-import           Data.Either
-import           Data.Function ((&))
 
 import           Text.CommonMark.Parser.Inline
 import           Text.CommonMark.Parser.Options
@@ -36,8 +35,6 @@ import           Text.CommonMark.Parser.Util
 import           Text.CommonMark.ParserCombinators
 import           Text.CommonMark.Syntax
 import           Text.CommonMark.Types
-
-import           Debug.Trace
 
 commonmarkToDoc :: ParseOptions -> Text -> Doc Text
 commonmarkToDoc opts text = Doc $ processDocument (cont, opts')
@@ -334,7 +331,7 @@ processElts opts (C (Container ct cs) : rest) =
               (cbs, rest') = span (isIndentedCode <||> isBlankLine)
                                   (C (Container ct cs) : rest)
 
-    RawHtmlBlock c -> HtmlBlock txt <| processElts opts rest
+    RawHtmlBlock _ -> HtmlBlock txt <| processElts opts rest
         where txt = T.unlines (map extractText (toList cs))
 
     -- References have already been taken into account in the reference map,
@@ -593,8 +590,6 @@ pHtmlBlockStart lastLineIsText = lookAhead $ do
                , condition7 <$ if lastLineIsText then mzero else blockStart condition7
                ]
 
-conditions = [condition1, condition2, condition3, condition4, condition5, condition6, condition7]
-
 data Condition = Condition { blockStart :: Parser ()
                            , blockEnd   :: Parser ()
                            }
@@ -603,16 +598,17 @@ instance Show Condition where
   show _ = "Condition{}"
 
 instance Eq Condition where
-  _ == _ = True
+  _ == _ = False
 
+lineContains :: Foldable t => t Text -> Parser ()
 lineContains terms = do
   line <- T.toCaseFold <$> takeTill ((== '\r') <||> (== '\n'))
   guard $ any (`T.isInfixOf` line) terms
 
-
+condition1, condition2, condition3, condition4, condition5, condition6, condition7 :: Condition
 condition1 = Condition
   { blockStart = do
-      choice $ map stringCaseless ["<script", "<pre", "<style"]
+      _ <- choice $ map stringCaseless ["<script", "<pre", "<style"]
       void pWhitespace <|> void ">" <|> lineEnding <|> endOfInput
   , blockEnd = lineContains ["</script>", "</pre>", "</style>"]
   }
@@ -639,7 +635,7 @@ condition5 = Condition
 
 condition6 = Condition
   { blockStart = do
-      "</" <|> "<"
+      void $ "</" <|> "<"
       tag <- takeTill (isWhitespace <||> (== '\n') <||> (== '\r') <||> (== '/') <||> (== '>'))
       guard $ isBlockHtmlTag (T.toLower tag)
       void pWhitespace <|> lineEnding <|> void ">" <|> void "/>"
@@ -727,9 +723,9 @@ parseBullet = do
 -- Parse a list number marker and return list type.
 parseListNumber :: Bool -> Parser ListType
 parseListNumber lastLineIsText = do
-    num :: Int <- decimal
+    num :: Integer <- decimal
     when lastLineIsText $
       guard $ num == 1
-    guard $ num < 10^9
+    guard $ num < (10 ^ (9 :: Integer))
     wrap <- choice [Period <$ scanChar '.', Paren <$ scanChar ')']
-    return $ Ordered wrap num
+    return $ Ordered wrap (fromInteger num)

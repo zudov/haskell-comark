@@ -2,11 +2,11 @@
 module Inline where
 
 import           Data.Text                       (Text)
-import qualified Data.Text as Text
+import qualified Data.Text                       as Text
 import           Test.Hspec
 
 import           Data.Maybe
-import qualified Data.Sequence as Seq
+import qualified Data.Sequence                   as Seq
 
 import           Text.CommonMark.Parser
 import           Text.CommonMark.Parser.Options

@@ -17,19 +17,17 @@ import           Control.Applicative
 import           Control.Bool
 import           Control.Monad                     hiding (mapM_)
 import           Data.Char.Extended
-import           Data.Foldable                     (foldMap)
-import qualified Data.List                         as L
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Text                         (Text)
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import qualified Data.Text.Lazy.Builder            as TB
-
 import           Data.Sequence                     (Seq, ViewL (..), ViewR (..),
                                                     singleton, viewl, viewr,
                                                     (<|), (><), (|>))
 import qualified Data.Sequence                     as Seq
+import           Data.Text                         (Text)
+import qualified Data.Text                         as T
+import qualified Data.Text.Lazy                    as TL
+import qualified Data.Text.Lazy.Builder            as TB
+import           Data.Tuple
 
 import           Text.CommonMark.Parser.Options
 import           Text.CommonMark.Parser.Util
@@ -38,10 +36,6 @@ import           Text.CommonMark.Syntax
 import           Text.CommonMark.Syntax.Builder
 import           Text.Html.Email.Validate
 import           Text.Html.Entity
-
-import           Data.Tuple
-
-import           Debug.Trace
 
 parseInlines :: ParseOptions -> Text -> Inlines Text
 parseInlines opts t = normalization $
@@ -117,7 +111,7 @@ pCode = do
     where codespan = backtickWord <|> nonBacktickWord <|> spaces
           backtickWord = takeWhile1 (== '`')
           nonBacktickWord = takeWhile1 ((/= '`') <&&> (not . isSpace))
-          spaces = skipWhitespace *> pure " "
+          spaces = " " <$ skipWhitespace
 
 -- [ Raw Html ] ----------------------------------------------------------------
 pHtml :: Parser (Inlines Text)
@@ -276,6 +270,7 @@ pEmphLink opts = do
     lookForLinkOrImage :: Seq Token -> Parser (Seq Token)
     lookForLinkOrImage = (handle . swap) . Seq.breakr isLinkOpener
       where
+        closer = Str "]"
         handle (viewr -> EmptyR, post) = pure (addInline post closer)
         handle (viewr -> pre :> opener@(LinkOpenToken _ active _ c), post)
           | not active = fallback
@@ -293,7 +288,7 @@ pEmphLink opts = do
                                    ImageOpener -> id
                 content = foldMap unToken $ processEmphTokens (InlineToken c <| post)
                 fallback = pure (addInlines pre (unToken opener) >< addInline post closer)
-        closer = Str "]"
+        handle (_, _) = mzero <?> "IMPOSSIBLE HAPPENED: expected LinkOpener"
     pInlineLink constr content = do
       char '(' *> optional skipWhitespace
       dest <- option "" pLinkDest

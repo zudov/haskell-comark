@@ -6,10 +6,7 @@ module Text.CommonMark.Parser.Options
     ) where
 
 import           Data.Default.Class
-import           Data.Monoid
-import           Data.Text             (Text)
-
-import           Text.CommonMark.Types
+import           Data.Text          (Text)
 
 data ParseOptions = ParseOptions
     { -- | Consolidate adjacent text nodes

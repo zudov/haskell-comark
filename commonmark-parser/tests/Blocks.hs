@@ -12,7 +12,7 @@ import           Text.CommonMark.TestUtils.Spec
 
 import           Control.Monad
 import           Data.Generics
-import Unsafe.Coerce
+import           Unsafe.Coerce
 
 import           Data.Maybe
 import qualified Data.Text                       as T
