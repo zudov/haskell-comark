@@ -317,9 +317,13 @@ processEmphToken closing@EmphDelimToken{} stack
             | dCanOpen closing -> closing <| stack
             | otherwise -> (InlineToken $ unToken closing) <| stack
           (viewl -> EmptyL, _) -> stack
-          (content, (viewl -> opening :< rest)) ->
-              matchEmphStrings rest opening closing
-                               (foldMap unToken $ Seq.reverse content)
+          (content, (viewl -> opening :< rest))
+            | dCanOpen closing && ((dLength opening + dLength closing) `mod` 3) == 0 ->
+                closing <| stack
+            | otherwise ->
+                matchEmphStrings rest opening closing
+                                 (foldMap unToken $ Seq.reverse content)
+          (_, _) -> closing <| stack -- XXX: when would that actually happen?
   | otherwise = InlineToken (unToken closing) <| stack
   where matchOpening ch d@EmphDelimToken{} = dChar d == ch && dCanOpen d
         matchOpening _ _ = False
