@@ -18,8 +18,8 @@ import           Data.List                         (intercalate)
 import qualified Data.Map                          as M
 import           Data.Maybe                        (mapMaybe, isNothing, isJust)
 import           Data.Monoid
-import           Data.Sequence                     (Seq, ViewR (..), singleton,
-                                                    viewr, (<|), (><), (|>))
+import           Data.Sequence                     (Seq, ViewR(..), singleton, ViewL(..),
+                                                    viewr, viewl, (<|), (><), (|>))
 import           Data.Char
 import qualified Data.Sequence                     as Seq
 import qualified Data.Set                          as Set
@@ -225,11 +225,11 @@ addLeaf lineNum lf = do
   ContainerStack top rest <- get
   case (top, lf) of
     (Container ct@(ListItem{}) cs, BlankLine{})
-      | (_ :> secondLine) <- viewr cs -- two blanks break out of list item:
-      , isBlankLine secondLine
-       -> closeContainer >> addLeaf lineNum lf
-      | otherwise
-       -> put $ ContainerStack (Container ct (cs |> L lineNum lf)) rest
+       | (firstLine :< _) <- viewl cs -- two blanks break out of list item:
+       , isBlankLine firstLine ->
+           closeContainer *> addLeaf lineNum lf
+       | otherwise ->
+           put $ ContainerStack (Container ct (cs |> L lineNum lf)) rest
     (Container ct cs, _) ->
       put $ ContainerStack (Container ct (cs |> L lineNum lf)) rest
 
@@ -698,6 +698,8 @@ parseListMarker afterListItem lastLineIsText = do
                 <|> countSpaces
   -- text can't immediately follow the list marker:
   guard $ contentPadding > 0
+  -- an empty list item cannot interrupt a paragraph
+  when lastLineIsText $ notFollowedBy endOfInput
   return ListItem { itemType = ty
                   , padding = markerPadding + contentPadding + listMarkerWidth ty
                   }
