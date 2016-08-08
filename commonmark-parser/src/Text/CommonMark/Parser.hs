@@ -441,7 +441,8 @@ processLine (lineNumber, txt) = do
        -- The end tag can occur on the same line as the start tag.
        (RawHtmlBlock condition : _, TextLine t)
          | Right () <- parse (blockEnd condition) t
-         -> do addContainer (RawHtmlBlock condition)
+         -> do closeContainer
+               addContainer (RawHtmlBlock condition)
                addLeaf lineNumber (TextLine t)
                closeContainer
        -- otherwise, close all the unmatched containers, add the new
