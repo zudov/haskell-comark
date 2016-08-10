@@ -14,6 +14,7 @@ module Text.CommonMark.Syntax
     -- * Block Elements
     , Blocks
     , Block(..)
+    , HeadingLevel(..)
     , ListType(..)
     , Delimiter(..)
     , BulletMarker(..)
@@ -52,7 +53,7 @@ data Block t
   -- | Thematic break
   = ThematicBreak
   -- | Heading: level, sequnce of inlines that define content
-  | Heading Int (Inlines t)
+  | Heading HeadingLevel (Inlines t)
   -- | Block of code: info string, literal content
   | CodeBlock (Maybe t) t
   -- | Raw HTML Block
@@ -70,6 +71,20 @@ data Block t
     )
 
 instance (NFData t) => NFData (Block t)
+
+data HeadingLevel
+  = Heading1
+  | Heading2
+  | Heading3
+  | Heading4
+  | Heading5
+  | Heading6
+  deriving
+    ( Show, Read, Eq, Ord
+    , Typeable, Data, Generic
+    )
+
+instance NFData HeadingLevel
 
 data ListType
   = Ordered Delimiter Int

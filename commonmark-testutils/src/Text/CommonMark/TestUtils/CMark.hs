@@ -28,7 +28,15 @@ nodeToBlock (Node _ (HTML_BLOCK html) []) = HtmlBlock $ stripEnd html
 nodeToBlock (Node _ (HTML_BLOCK _) _)     = error "HTML node has children"
 nodeToBlock (Node _ (CODE_BLOCK i c) []) = CodeBlock (monoidToMaybe i) c
 nodeToBlock (Node _ CODE_BLOCK{} _)    = error "CODE_BLOCK has children"
-nodeToBlock (Node _ (HEADING l) ns) = Heading l $ S.fromList $ map nodeToInline ns
+nodeToBlock (Node _ (HEADING l) ns) = Heading h $ S.fromList $ map nodeToInline ns
+  where h = case l of
+              1 -> Heading1
+              2 -> Heading2
+              3 -> Heading3
+              4 -> Heading4
+              5 -> Heading5
+              6 -> Heading6
+              _ -> error "HEADING has invalid level"
 nodeToBlock (Node _ (LIST ListAttributes{..}) ns) =
     List listType' listTight $ map itemToBlocks ns
     where listType' = case (listType,listDelim) of

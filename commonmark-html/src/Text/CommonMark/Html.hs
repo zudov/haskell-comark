@@ -91,8 +91,13 @@ renderBlocks bs = nl >> mapM_ (\b -> nl >> renderBlock b >> nl) bs
 renderBlock :: Block Text -> HtmlBuilder
 renderBlock (Para is) = tag "p" (renderInlines is)
 renderBlock (Heading n is) = tag hx (renderInlines is)
-  where hx = case n of 1 -> "h1"; 2 -> "h2"; 3 -> "h3";
-                       4 -> "h4"; 5 -> "h5"; _ -> "h6"
+  where hx = case n of
+               Heading1 -> "h1"
+               Heading2 -> "h2"
+               Heading3 -> "h3"
+               Heading4 -> "h4"
+               Heading5 -> "h5"
+               Heading6 -> "h6"
 renderBlock (CodeBlock mInfo t) = tag "pre" $ tagWith args "code" $ escapedText t
     where args = maybeToList (("class",) . lang <$> mInfo)
           lang = ("language-" <>) . T.takeWhile (/= ' ')

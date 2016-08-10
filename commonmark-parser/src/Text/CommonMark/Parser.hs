@@ -164,9 +164,9 @@ verbatimContainerStart lastLineIsText = choice
 type Leaf = GenLeaf Text
 data GenLeaf t = TextLine         t
                | BlankLine        t
-               | ATXHeading    Int t
-               | SetextHeading Int t
-               | SetextToken  Int t
+               | ATXHeading    HeadingLevel t
+               | SetextHeading HeadingLevel t
+               | SetextToken   HeadingLevel t
                | Rule
                deriving (Show, Functor)
 
@@ -523,14 +523,20 @@ scanBlockquoteStart = scanChar '>' *> tabCrusher *> discardOpt (scanChar ' ')
 -- headers without preceding blank lines, requiring the space
 -- avoids accidentally capturing a line like `#8 toggle bolt` as
 -- a header.
-parseAtxHeadingStart :: Parser Int
+parseAtxHeadingStart :: Parser HeadingLevel
 parseAtxHeadingStart = do
   _ <- char '#'
   hashes <- upToCountChars 5 (== '#')
   -- hashes must be followed by space unless empty header:
   notFollowedBy (skip ((/= ' ') <&&> (/= '\t')))
-  return $ T.length hashes + 1
-
+  pure $ case (T.length hashes + 1) of
+    1 -> Heading1
+    2 -> Heading2
+    3 -> Heading3
+    4 -> Heading4
+    5 -> Heading5
+    6 -> Heading6
+    _ -> error $ "IMPOSSIBLE HAPPENED: parseAtxHeading parsed more than 6 characters "
 parseAtxHeadingContent :: Parser Text
 parseAtxHeadingContent = T.strip . removeATXSuffix <$> takeText
   where removeATXSuffix t =
@@ -549,7 +555,7 @@ parseSetextToken = fmap (uncurry SetextToken) $ withConsumed $ do
   d <- satisfy (\c -> c == '-' || c == '=')
   skipWhile (== d)
   scanBlankline
-  return $ if d == '=' then 1 else 2
+  return $ if d == '=' then Heading1 else Heading2
 
 -- Scan a horizontal rule line: "...three or more hyphens, asterisks,
 -- or underscores on a line by themselves. If you wish, you may use
