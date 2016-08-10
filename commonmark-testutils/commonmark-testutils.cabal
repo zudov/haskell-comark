@@ -21,7 +21,7 @@ library
   other-extensions:    TemplateHaskell
                        OverloadedStrings
                        FlexibleInstances
-  build-depends:       base               >=4.7 && <4.9
+  build-depends:       base               >=4.7 && <5.0
                      , containers
                      , text
                      , cmark              >= 0.4.0.1

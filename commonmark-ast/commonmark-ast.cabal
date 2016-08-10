@@ -17,7 +17,7 @@ library
   -- other-modules:
   other-extensions:    DeriveDataTypeable
                        DeriveGeneric
-  build-depends:       base >=4.7 && <4.9
+  build-depends:       base >=4.7 && <5.0
                      , containers
                      , deepseq
   hs-source-dirs:      src/
