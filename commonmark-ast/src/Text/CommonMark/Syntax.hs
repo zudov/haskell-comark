@@ -33,7 +33,11 @@ import           GHC.Generics    (Generic)
 
 
 -- | A Document
-newtype Doc t = Doc (Blocks t) deriving (Show, Read, Eq, Typeable, Data, Generic, Functor, Foldable, Traversable)
+newtype Doc t = Doc (Blocks t)
+  deriving ( Show, Read, Eq
+           , Typeable, Data, Generic
+           , Functor, Foldable, Traversable
+           )
 
 instance NFData t => NFData (Doc t)
 
@@ -44,56 +48,87 @@ instance Monoid t => Monoid (Doc t) where
 type Blocks t = Seq (Block t)
 
 -- | Block elements
-data Block t =
-    ThematicBreak -- ^ Thematic break
-  | Heading Int (Inlines t) -- ^ Heading: level, sequnce of inlines that define content
-  | CodeBlock (Maybe t) t -- ^ Block of code: info string, literal content
-  | HtmlBlock t -- ^ Raw HTML Block
-  | Para (Inlines t)  -- ^ Paragraph (a grouped sequence of inlines)
-  | Quote (Blocks t) -- ^ Block Quote (a quoted sequence of blocks)
-   -- ^ List: Type of the list, tightness, a sequnce of blocks (list item)
+data Block t
+  -- | Thematic break
+  = ThematicBreak
+  -- | Heading: level, sequnce of inlines that define content
+  | Heading Int (Inlines t)
+  -- | Block of code: info string, literal content
+  | CodeBlock (Maybe t) t
+  -- | Raw HTML Block
+  | HtmlBlock t
+  -- | Paragraph (a grouped sequence of inlines)
+  | Para (Inlines t)
+  -- | Block Quote (a quoted sequence of blocks)
+  | Quote (Blocks t)
+  -- | List: Type of the list, tightness, a sequnce of blocks (list item)
   | List ListType Bool [Blocks t]
-  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Foldable, Traversable)
+  deriving
+    ( Show, Read, Eq, Ord
+    , Typeable, Data, Generic
+    , Functor, Foldable, Traversable
+    )
 
 instance (NFData t) => NFData (Block t)
 
-data ListType = Ordered Delimiter Int
-              | Bullet BulletMarker
-              deriving (Show, Read, Eq, Ord, Typeable, Data, Generic)
+data ListType
+  = Ordered Delimiter Int
+  | Bullet BulletMarker
+  deriving
+    ( Show, Read, Eq, Ord
+    , Typeable, Data, Generic
+    )
 
 instance NFData ListType
 
-data Delimiter = Period
-               | Paren
-               deriving (Show, Read, Eq, Ord, Typeable, Data, Generic)
+data Delimiter
+  = Period
+  | Paren
+  deriving
+    ( Show, Read, Eq, Ord
+    , Typeable, Data, Generic
+    )
+
 instance NFData Delimiter
 
-data BulletMarker = Minus    -- ^ '-'
-                  | Plus     -- ^ '+'
-                  | Asterisk -- ^ '*'
-                  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic)
+data BulletMarker
+  = Minus    -- ^ @-@
+  | Plus     -- ^ @+@
+  | Asterisk -- ^ @*@
+  deriving
+    ( Show, Read, Eq, Ord
+    , Typeable, Data, Generic
+    )
 
 instance NFData BulletMarker
 
 type Inlines t = Seq (Inline t)
 
 -- | Inline elements
-data Inline t =
-    Str t            -- ^ Text (string)
-  | Code t           -- ^ Inline code
-  | Emph (Inlines t) -- ^ Emphasized text (a sequence of inlines)
-  | Strong (Inlines t) -- ^ Strongly emphasized text (a sequence of inlines)
-    -- ^ Hyperlink: visible link text (sequence of inlines), destination, title
+data Inline t
+  -- | Text (string)
+  = Str t
+  -- | Inline code
+  | Code t
+  -- | Emphasized text (a sequence of inlines)
+  | Emph (Inlines t)
+  -- | Strongly emphasized text (a sequence of inlines)
+  | Strong (Inlines t)
+  -- | Hyperlink: visible link text (sequence of inlines), destination, title
   | Link (Inlines t) t (Maybe t) -- TODO: special types
-    -- ^ Image hyperlink: image description, destination, title
+  -- | Image hyperlink: image description, destination, title
   | Image (Inlines t) t (Maybe t) -- TODO: special types
-  | RawHtml t -- ^ Inline Raw HTML tag
+  -- | Inline Raw HTML tag
+  | RawHtml t
   | SoftBreak
   | HardBreak
-  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic, Functor, Foldable, Traversable)
+  deriving
+    ( Show, Read, Eq, Ord
+    , Typeable, Data, Generic
+    , Functor, Foldable, Traversable
+    )
 
 instance NFData t => NFData (Inline t)
-
 
 -- | Consolidate adjacent text nodes
 normalize :: Monoid t => Inlines t -> Inlines t
