@@ -1,12 +1,12 @@
 name:                commonmark-html
 version:             0.1.0.0
-synopsis:            CommonMark's AST defenition
+synopsis:            Commonmark renderer
 -- description:         
 license:             BSD3
 license-file:        LICENSE
 author:              Konstantin Zudov
-maintainer:          konstantin@anche.no
-copyright:           (c) Konstantin Zudov, 2014
+maintainer:          co@zudov.me
+copyright:           (c) Konstantin Zudov, 2014, 2015, 2016
 category:            Text
 build-type:          Simple
 cabal-version:       >=1.10
