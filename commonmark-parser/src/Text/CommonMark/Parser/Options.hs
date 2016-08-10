@@ -1,11 +1,11 @@
 module Text.CommonMark.Parser.Options
     ( ParseOptions
+    , def
     , parseOptNormalize
     , parseOptLinkReferences
-    , def
     ) where
 
-import           Data.Default.Class
+import           Data.Default.Class (Default (..))
 import           Data.Text          (Text)
 
 data ParseOptions = ParseOptions

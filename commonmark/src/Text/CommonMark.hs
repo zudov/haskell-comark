@@ -1,6 +1,6 @@
 module Text.CommonMark
-    ( module Text.CommonMark.Parser.Options
-    , commonmarkToHtml
+    ( commonmarkToHtml
+    , module Text.CommonMark.Parser.Options
     ) where
 
 import           Data.Text                      (Text)
