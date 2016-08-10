@@ -8,6 +8,25 @@ repo:
 - **commonmark-html** -- responsible for rendering of AST into html;
 - **commonmark-testutils** -- utilities for testing these packages.
 
+# TODO
+
+- [X] Working parser implementation, pass all tests
+- [X] Fast and accurate renderer, renders things exactly as in spec.txt.
+- [X] Make full use of spec examples.
+      Both renderer and parser are separately tested against the spec relying only on it
+	  and the reference implementation (libcmark).
+- [X] Handle pathological inputs. Benchmarks are run against `markdown-it`'s samples
+      and over notoriously known nested parenthesis/brackets (`"[" * 50000 + "foo" + "]" * 50000`)
+- [ ] Revise module structure, names, and (re-)exports.
+- [ ] Add to hackage and stackage.
+- [ ] Document things up.
+- [ ] Extend ecosystem with additional libraries that ease the integration
+      (commonmark-blaze, commonmark-lucid, commonmark-json)
+- [ ] Add helpers for processing/walking the AST and examples of typical manipulations.
+- [ ] Work on extensibility.
+- [ ] Compile with ghcjs. If performance/size isn't great, consider making bindings to
+      `commonmark.js` but provide `commonmark-ast` based interface.
+
 # License
 
 This library is released under BSD-3-Clause license. See LICENSE for terms and copyright notice.

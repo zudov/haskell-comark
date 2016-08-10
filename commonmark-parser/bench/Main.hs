@@ -28,16 +28,19 @@ fromRight (Left _) = error "fromRight"
 
 main :: IO ()
 main = defaultMain
-  [ bgroup "pathological with normalization" $ benches True pathological
-  , bgroup "pathological without normalization" $ benches False pathological
+  [ bgroup "pathological with normalization"           $ benches True  pathological
+  , bgroup "pathological without normalization"        $ benches False pathological
+  , bgroup "markdown-it samples with normalization"    $ benches True  samples
+  , bgroup "markdown-it samples without normalization" $ benches False samples
   ]
 
 benches norm = map (\(n,c) -> bench n $ nf (commonmarkToDoc def {parseOptNormalize = norm}) c)
 
 pathological :: [(String, Text)]
 pathological =
-  [ ("nested brackets", nested 50000 "[" "foo" "]")]
-  {-, ("nested parenthesis", nested 10000 "(" "foo" ")") ]-}
+  [ ("nested brackets",    nested 50000 "[" "foo" "]")
+  , ("nested parenthesis", nested 50000 "(" "foo" ")")
+  ]
 
 nested :: Int -> Text -> Text -> Text -> Text
 nested n opener inner closer = T.replicate n opener <> inner <> T.replicate n closer
