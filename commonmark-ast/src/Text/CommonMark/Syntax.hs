@@ -63,7 +63,7 @@ data Block t
   -- | Block Quote (a quoted sequence of blocks)
   | Quote (Blocks t)
   -- | List: Type of the list, tightness, a sequnce of blocks (list item)
-  | List ListType Bool [Blocks t]
+  | List ListType Bool (Seq (Blocks t))
   deriving
     ( Show, Read, Eq, Ord
     , Typeable, Data, Generic

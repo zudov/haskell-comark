@@ -279,7 +279,7 @@ processElts opts (C (Container ct cs) : rest) =
     -- (skipping blank lines), determine whether the list is tight or
     -- loose, and generate a List.
     ListItem { itemType = itemType } ->
-      List itemType isTight items' <| processElts opts rest'
+      List itemType isTight (Seq.fromList items') <| processElts opts rest'
         where
           xs = takeListItems rest
 
