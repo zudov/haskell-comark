@@ -1,5 +1,13 @@
 # commonmark-haskell
 
+[![Build Status](https://travis-ci.com/zudov/commonmark-haskell.svg?token=kMvy3AVPyiRKSw2z67xJ&branch=master)](https://travis-ci.com/zudov/commonmark-haskell)
+
+[![commonmark on Hackage](https://img.shields.io/hackage/v/commonmark.svg)](http://hackage.haskell.org/package/commonmark)
+
+[![commonmark on Stackage LTS 2](http://stackage.org/package/commonmark/badge/lts-2)](http://stackage.org/lts-2/package/commonmark)
+[![commonmark on Stackage LTS 3](http://stackage.org/package/commonmark/badge/lts-3)](http://stackage.org/lts-3/package/commonmark)
+[![commonmark on Stackage Nightly](http://stackage.org/package/commonmark/badge/nightly)](http://stackage.org/nightly/package/commonmark)
+
 The functionality is split across several libraries which are contained in this
 repo:
 
