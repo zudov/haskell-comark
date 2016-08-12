@@ -135,7 +135,12 @@ data Inline t
   | Image (Inlines t) t (Maybe t) -- TODO: special types
   -- | Inline Raw HTML tag
   | RawHtml t
+  -- | A regular linebreak. A conforming renderer may render a soft
+  --   line break in HTML either as line break or as a space.
   | SoftBreak
+  -- | A line break that is marked as hard (either with spaces or
+  --   backslash, see the spec for details). In html it would be rendered
+  --   as @<br />@
   | HardBreak
   deriving
     ( Show, Read, Eq, Ord
