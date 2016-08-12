@@ -1,11 +1,10 @@
 module Text.CommonMark.Parser.Options
     ( ParseOptions
-    , def
+    , defParseOptions
     , parseOptNormalize
     , parseOptLinkReferences
     ) where
 
-import           Data.Default.Class (Default (..))
 import           Data.Text          (Text)
 
 data ParseOptions = ParseOptions
@@ -29,7 +28,8 @@ data ParseOptions = ParseOptions
     , parseOptLinkReferences :: Text -> Maybe (Text, Maybe Text)
     }
 
-instance Default ParseOptions where
-    def = ParseOptions { parseOptNormalize = False
-                       , parseOptLinkReferences = const Nothing
-                       }
+defParseOptions :: ParseOptions
+defParseOptions = ParseOptions
+  { parseOptNormalize = False
+  , parseOptLinkReferences = const Nothing
+  }

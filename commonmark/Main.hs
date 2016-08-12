@@ -57,6 +57,6 @@ main = main' =<< either (\err -> hPutStrLn stderr err >> exitFailure) return
              =<< parseArgs <$> getArgs
 
 main' :: Options -> IO ()
-main' Options{..} = T.interact (commonmarkToHtml parserOpts)
-    where parserOpts = def { parseOptNormalize = normalize }
+main' Options{..} = T.interact (commonmarkToHtml parseOptions)
+    where parseOptions = defParseOptions { parseOptNormalize = normalize }
 
