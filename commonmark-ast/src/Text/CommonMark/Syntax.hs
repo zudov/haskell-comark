@@ -29,7 +29,7 @@ import           Control.DeepSeq (NFData)
 import           Data.Data       (Data, Typeable)
 import           Data.Monoid
 import           Data.Sequence   (Seq, ViewL (..), viewl, (<|))
-import           Data.String     (IsString)
+import           Data.String     (IsString(..))
 import           GHC.Generics    (Generic)
 
 
@@ -147,6 +147,9 @@ data Inline t
     , Typeable, Data, Generic
     , Functor, Foldable, Traversable
     )
+
+instance IsString t => IsString (Inline t) where
+  fromString = Str . fromString
 
 instance NFData t => NFData (Inline t)
 
