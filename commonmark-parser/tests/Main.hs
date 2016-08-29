@@ -21,4 +21,4 @@ main = do
 
         describe "Properties" $ do
             prop "Any sequence of characters is a valid input"
-                (\t -> commonmarkToDoc def (pack t) `deepseq` True)
+                (\t -> commonmarkToDoc defParseOptions (pack t) `deepseq` True)
