@@ -34,7 +34,7 @@ main = defaultMain
   , bgroup "markdown-it samples without normalization" $ benches False samples
   ]
 
-benches norm = map (\(n,c) -> bench n $ nf (commonmarkToDoc def {parseOptNormalize = norm}) c)
+benches norm = map (\(n,c) -> bench n $ nf (commonmarkToDoc defParseOptions {parseOptNormalize = norm}) c)
 
 pathological :: [(String, Text)]
 pathological =
