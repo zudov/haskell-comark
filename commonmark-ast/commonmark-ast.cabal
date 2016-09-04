@@ -12,8 +12,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Text.CommonMark.Syntax
-                       Text.CommonMark.Syntax.Builder
+  exposed-modules:     Text.Commonmark.Syntax
+                       Text.Commonmark.Syntax.Builder
   -- other-modules:
   other-extensions:    DeriveDataTypeable
                        DeriveGeneric

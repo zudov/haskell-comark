@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE ViewPatterns      #-}
-module Text.CommonMark.TestUtils.Spec
+module Text.Commonmark.TestUtils.Spec
     ( SpecTest(..)
     , spec
     , docInline
@@ -11,12 +11,12 @@ module Text.CommonMark.TestUtils.Spec
 import           Data.Aeson
 import qualified Data.ByteString.Lazy              as B
 import           Data.Maybe                        (fromJust)
-import           Data.Sequence                     (ViewL (..), viewl)
+import           Data.Sequence                     (ViewL(..), viewl)
 import           Data.Text                         (Text)
 
-import           Text.CommonMark.Syntax
+import           Text.Commonmark.Syntax
 
-import           Text.CommonMark.TestUtils.Spec.TH
+import           Text.Commonmark.TestUtils.Spec.TH
 
 spec :: [SpecTest Text Text]
 spec = fromJust $ decode $ B.fromStrict $(specFile)

@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
-module Text.CommonMark.TestUtils.CMark
+module Text.Commonmark.TestUtils.CMark
     ( module CMark
     , nodeToDoc
     , nodeToBlock
@@ -15,7 +15,7 @@ import qualified Data.Text              as Text
 
 import           CMark
 
-import           Text.CommonMark.Syntax
+import           Text.Commonmark.Syntax
 
 -- | Converts a cmark's AST to commonmark's AST
 nodeToDoc :: Node -> Doc Text

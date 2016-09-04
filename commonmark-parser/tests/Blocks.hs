@@ -4,11 +4,11 @@ module Blocks where
 
 import           Test.Hspec
 
-import           Text.CommonMark.Parser
-import           Text.CommonMark.Parser.Options
-import           Text.CommonMark.Syntax
-import           Text.CommonMark.TestUtils.CMark
-import           Text.CommonMark.TestUtils.Spec
+import           Text.Commonmark.Parser
+import           Text.Commonmark.Parser.Options
+import           Text.Commonmark.Syntax
+import           Text.Commonmark.TestUtils.CMark
+import           Text.Commonmark.TestUtils.Spec
 
 import           Control.Monad
 import           Data.Generics

@@ -1,4 +1,4 @@
-module Text.CommonMark.Types
+module Text.Commonmark.Types
     ( ReferenceMap ) where
 
 import           Data.Map  (Map)

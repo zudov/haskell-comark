@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Text.CommonMark.TestUtils.Spec.TH
+module Text.Commonmark.TestUtils.Spec.TH
     ( specFile
     ) where
 

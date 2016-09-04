@@ -15,13 +15,13 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src/
                        extended/
-  exposed-modules:     Text.CommonMark.Parser
-                       Text.CommonMark.Parser.Options
-                       Text.CommonMark.Parser.Inline
+  exposed-modules:     Text.Commonmark.Parser
+                       Text.Commonmark.Parser.Options
+                       Text.Commonmark.Parser.Inline
   other-modules:       Text.Html.Email.Validate
-                       Text.CommonMark.Types
-                       Text.CommonMark.Parser.Util
-                       Text.CommonMark.ParserCombinators
+                       Text.Commonmark.Types
+                       Text.Commonmark.Parser.Util
+                       Text.Commonmark.ParserCombinators
                        Data.Char.Extended
                        Data.Text.Extended
   other-extensions:    OverloadedStrings

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Text.CommonMark.Parser.Util where
+module Text.Commonmark.Parser.Util where
 
 import           Control.Applicative
 import           Control.Bool
@@ -11,8 +11,8 @@ import           Data.Text                         (Text)
 import qualified Data.Text.Extended                as T
 import           Prelude                           hiding (takeWhile)
 
-import           Text.CommonMark.ParserCombinators
-import           Text.CommonMark.Types
+import           Text.Commonmark.ParserCombinators
+import           Text.Commonmark.Types
 
 type Scanner = Parser ()
 

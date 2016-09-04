@@ -5,10 +5,10 @@ import           Control.Monad
 
 import           Test.Hspec
 
-import           Text.CommonMark.TestUtils.CMark
-import           Text.CommonMark.TestUtils.Spec
+import           Text.Commonmark.TestUtils.CMark
+import           Text.Commonmark.TestUtils.Spec
 
-import           Text.CommonMark.Html
+import           Text.Commonmark.Html
 
 
 

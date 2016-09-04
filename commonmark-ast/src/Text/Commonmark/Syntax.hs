@@ -7,9 +7,9 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE ViewPatterns       #-}
 
--- | A definition of CommonMark's AST
+-- | A definition of Commonmark's AST
 
-module Text.CommonMark.Syntax
+module Text.Commonmark.Syntax
     ( Doc(..)
     -- * Block Elements
     , Blocks
@@ -28,7 +28,7 @@ module Text.CommonMark.Syntax
 import           Control.DeepSeq (NFData)
 import           Data.Data       (Data, Typeable)
 import           Data.Monoid
-import           Data.Sequence   (Seq, ViewL (..), viewl, (<|))
+import           Data.Sequence   (Seq, ViewL(..), viewl, (<|))
 import           Data.String     (IsString(..))
 import           GHC.Generics    (Generic)
 

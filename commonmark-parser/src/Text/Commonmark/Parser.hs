@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
-module Text.CommonMark.Parser
+module Text.Commonmark.Parser
     ( commonmarkToDoc
     ) where
 
@@ -21,20 +21,19 @@ import           Data.List                         (intercalate)
 import qualified Data.Map                          as M
 import           Data.Maybe                        (mapMaybe)
 import           Data.Monoid
-import           Data.Sequence                     (Seq, ViewL (..), ViewR (..),
-                                                    singleton, viewl, viewr,
-                                                    (<|), (><), (|>))
+import           Data.Sequence
+  (Seq, ViewL(..), ViewR(..), singleton, viewl, viewr, (<|), (><), (|>))
 import qualified Data.Sequence                     as Seq
 import qualified Data.Set                          as Set
 import           Data.Text.Extended                (Text)
 import qualified Data.Text.Extended                as T
 
-import           Text.CommonMark.Parser.Inline
-import           Text.CommonMark.Parser.Options
-import           Text.CommonMark.Parser.Util
-import           Text.CommonMark.ParserCombinators
-import           Text.CommonMark.Syntax
-import           Text.CommonMark.Types
+import           Text.Commonmark.Parser.Inline
+import           Text.Commonmark.Parser.Options
+import           Text.Commonmark.Parser.Util
+import           Text.Commonmark.ParserCombinators
+import           Text.Commonmark.Syntax
+import           Text.Commonmark.Types
 
 commonmarkToDoc :: ParseOptions -> Text -> Doc Text
 commonmarkToDoc opts text = Doc $ processDocument (cont, opts')

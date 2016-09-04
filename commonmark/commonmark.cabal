@@ -18,7 +18,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:    Text.CommonMark
+  exposed-modules:    Text.Commonmark
   -- other-modules:       
   -- other-extensions:    
   hs-source-dirs:     src

@@ -10,7 +10,7 @@ import           System.Environment
 import           System.Exit
 import           System.IO
 
-import           Text.CommonMark
+import           Text.Commonmark
 
 data Options = Options { outputFormat :: Format
                        , normalize    :: Bool

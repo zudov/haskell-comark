@@ -7,7 +7,7 @@ import           Control.Monad
 import           Data.Either                       (isRight)
 import           Data.Text                         (Text)
 import qualified Data.Text                         as T
-import           Text.CommonMark.ParserCombinators
+import           Text.Commonmark.ParserCombinators
 
 isValidEmail :: Text -> Bool
 isValidEmail = isRight . parse (scanEmail *> endOfInput)

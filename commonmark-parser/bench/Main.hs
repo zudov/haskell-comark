@@ -14,10 +14,10 @@ import           Data.Text.Encoding
 import           Data.Text.Lazy                 (toStrict)
 import           Data.Text.Lazy.Builder
 
-import           Text.CommonMark.Parser
-import           Text.CommonMark.Parser.Inline
-import           Text.CommonMark.Parser.Options
-import           Text.CommonMark.Syntax
+import           Text.Commonmark.Parser
+import           Text.Commonmark.Parser.Inline
+import           Text.Commonmark.Parser.Options
+import           Text.Commonmark.Syntax
 
 samples :: [(FilePath, Text)]
 samples = map (fmap decodeUtf8) $(embedDir "bench/samples/")

@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE ViewPatterns          #-}
-module Text.CommonMark.ParserCombinators (
+module Text.Commonmark.ParserCombinators (
     Position(..)
   , Parser
   , parse

@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
-module Text.CommonMark.Html
+module Text.Commonmark.Html
     ( docToHtml
     ) where
 
@@ -16,15 +16,14 @@ import           Data.Monoid
 import           Data.Text                         (Text)
 import qualified Data.Text                         as T
 import           Data.Text.Lazy                    (toStrict)
-import           Data.Text.Lazy.Builder            (Builder, fromString,
-                                                    fromText, singleton,
-                                                    toLazyText)
+import           Data.Text.Lazy.Builder
+  (Builder, fromString, fromText, singleton, toLazyText)
 import           Numeric                           (showIntAtBase)
 import           Prelude
 
 import           Data.Bits                         (shiftR, (.&.))
 
-import           Text.CommonMark.Syntax
+import           Text.Commonmark.Syntax
 
 docToHtml :: Doc Text -> Text
 docToHtml (Doc bs) = toStrict $ toLazyText $ buildHtml (renderBlocks bs)

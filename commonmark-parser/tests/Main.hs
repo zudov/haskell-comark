@@ -9,9 +9,9 @@ import           Test.QuickCheck
 import           Control.DeepSeq
 import           Data.Text                      (pack)
 
-import           Text.CommonMark.Parser
-import           Text.CommonMark.Parser.Options
-import           Text.CommonMark.Syntax
+import           Text.Commonmark.Parser
+import           Text.Commonmark.Parser.Options
+import           Text.Commonmark.Syntax
 
 main :: IO ()
 main = do

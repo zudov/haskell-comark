@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Text.CommonMark.Parser.Inline
+module Text.Commonmark.Parser.Inline
     ( parseInlines
     , pReference
     , parseInfoString
@@ -19,9 +19,8 @@ import           Control.Monad                     hiding (mapM_)
 import           Data.Char.Extended
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Sequence                     (Seq, ViewL (..), ViewR (..),
-                                                    singleton, viewl, viewr,
-                                                    (<|), (><), (|>))
+import           Data.Sequence
+  (Seq, ViewL(..), ViewR(..), singleton, viewl, viewr, (<|), (><), (|>))
 import qualified Data.Sequence                     as Seq
 import           Data.Text                         (Text)
 import qualified Data.Text                         as T
@@ -29,11 +28,11 @@ import qualified Data.Text.Lazy                    as TL
 import qualified Data.Text.Lazy.Builder            as TB
 import           Data.Tuple
 
-import           Text.CommonMark.Parser.Options
-import           Text.CommonMark.Parser.Util
-import           Text.CommonMark.ParserCombinators
-import           Text.CommonMark.Syntax
-import           Text.CommonMark.Syntax.Builder
+import           Text.Commonmark.Parser.Options
+import           Text.Commonmark.Parser.Util
+import           Text.Commonmark.ParserCombinators
+import           Text.Commonmark.Syntax
+import           Text.Commonmark.Syntax.Builder
 import           Text.Html.Email.Validate
 import           Text.Html.Entity
 

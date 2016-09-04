@@ -1,11 +1,11 @@
-module Text.CommonMark.Parser.Options
+module Text.Commonmark.Parser.Options
     ( ParseOptions
     , defParseOptions
     , parseOptNormalize
     , parseOptLinkReferences
     ) where
 
-import           Data.Text          (Text)
+import           Data.Text (Text)
 
 data ParseOptions = ParseOptions
     { -- | Consolidate adjacent text nodes

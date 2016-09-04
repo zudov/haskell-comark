@@ -14,9 +14,9 @@ Extra-source-files:  README.md
 Data-Files:          spec.json
 
 library
-  exposed-modules:     Text.CommonMark.TestUtils.CMark
-                       Text.CommonMark.TestUtils.Spec
-  other-modules:       Text.CommonMark.TestUtils.Spec.TH
+  exposed-modules:     Text.Commonmark.TestUtils.CMark
+                       Text.Commonmark.TestUtils.Spec
+  other-modules:       Text.Commonmark.TestUtils.Spec.TH
                        Paths_commonmark_testutils
   other-extensions:    TemplateHaskell
                        OverloadedStrings
