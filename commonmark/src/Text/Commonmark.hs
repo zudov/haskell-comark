@@ -6,7 +6,7 @@
     , parseOptLinkReferences
       -- * Commonmark Parser ("Text.Commonmark.Parser")
     , commonmarkToDoc
-      -- * HTML Renderer ("Text.Commonmark.Html)
+      -- * HTML Renderer ("Text.Commonmark.Html")
     , commonmarkToHtml
     ) where
 
