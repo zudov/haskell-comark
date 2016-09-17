@@ -109,8 +109,9 @@ pCode = do
        <|> pure (str ticks)
     where codespan = backtickWord <|> nonBacktickWord <|> spaces
           backtickWord = takeWhile1 (== '`')
-          nonBacktickWord = takeWhile1 ((/= '`') <&&> (not . isSpace))
-          spaces = " " <$ skipWhitespace
+          nonBacktickWord = takeWhile1 ((/= '`') <&&> (not . collapsableSpace))
+          spaces = " " <$ takeWhile1 collapsableSpace
+          collapsableSpace = (== ' ') <||> (== '\r') <||> (== '\n')
 
 -- [ Raw Html ] ----------------------------------------------------------------
 pHtml :: Parser (Inlines Text)
