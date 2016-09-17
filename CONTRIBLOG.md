@@ -1,3 +1,10 @@
+# [2016-08-13]
+  - Updated the spec, a new test case found me a bug in the space collapsing
+	inside code spans.
+
+	I have way too many variosly named spacy predicates/parsers/scanners.
+	Those need to be reduced to a smaller and sensible set.
+
 # [2016-08-12]
   - Today I plan to finish revising the current 'simple' AST. I want
     to agree with myself on names, that's always useful. Along the way
