@@ -1,4 +1,4 @@
-resolver: lts-6.15
+resolver: lts-7.0
 packages:
     - ./commonmark
     - ./commonmark-ast
