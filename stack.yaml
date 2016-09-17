@@ -6,6 +6,10 @@ packages:
     - ./commonmark-html
     - location: ./commonmark-testutils
       extra-dep: true
+    - location:
+        git: git@github.com:zudov/cmark-hs.git
+        commit: 53f2f4b98941bb9da9c5d46ddbba03a20316f90d
+      extra-dep: true
 
 extra-deps:
     - html5-entity-0.2.0.3
