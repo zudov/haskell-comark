@@ -7,7 +7,7 @@ packages:
     - location: ./commonmark-testutils
       extra-dep: true
     - location:
-        git: git@github.com:zudov/cmark-hs.git
+        git: https://github.com/zudov/cmark-hs.git
         commit: 53f2f4b98941bb9da9c5d46ddbba03a20316f90d
       extra-dep: true
 
