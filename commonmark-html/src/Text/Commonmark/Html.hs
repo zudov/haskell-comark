@@ -25,6 +25,7 @@ import           Data.Bits                         (shiftR, (.&.))
 
 import           Text.Commonmark.Syntax
 
+-- | Render a Commonmark document as HTML.
 docToHtml :: Doc Text -> Text
 docToHtml (Doc bs) = toStrict $ toLazyText $ buildHtml (renderBlocks bs)
 

@@ -35,6 +35,11 @@ import           Text.Commonmark.ParserCombinators
 import           Text.Commonmark.Syntax
 import           Text.Commonmark.Types
 
+-- | Parses Commonmark document. Any sequence of characters is a valid
+--   Commonmark document.
+--
+--   At the moment no sanitizations are performed besides the ones defined
+--   in the spec.
 commonmarkToDoc :: ParseOptions -> Text -> Doc Text
 commonmarkToDoc opts text = Doc $ processDocument (cont, opts')
     where (cont, refmap) = processLines text

@@ -1,3 +1,7 @@
+# [2016-08-27]
+  - Worked on docs. Covered all exposed API except some of the sort-of
+    internal functions in `Commonmark.Parser.*`.
+
 # [2016-08-13]
   - Updated the spec, a new test case found me a bug in the space collapsing
 	inside code spans.
