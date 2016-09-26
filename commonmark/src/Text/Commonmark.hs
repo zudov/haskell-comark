@@ -1,12 +1,20 @@
- module Text.Commonmark
-    ( -- * Parser options ("Text.Commonmark.Parser.Options")
+-- | This module mostly contains reexports from the following modules:
+--
+--     - "Text.Commonmark.Parser.Options"
+--     - "Text.Commonmark.Parser"
+--     - "Text.Commonmark.Html"
+
+module Text.Commonmark
+    ( -- * Parser options
       ParseOptions
     , defParseOptions
     , parseOptNormalize
     , parseOptLinkReferences
-      -- * Commonmark Parser ("Text.Commonmark.Parser")
+      -- * Commonmark Parser
     , commonmarkToDoc
-      -- * HTML Renderer ("Text.Commonmark.Html")
+      -- * HTML Rendererer
+    , docToHtml
+      -- * Common compositions
     , commonmarkToHtml
     ) where
 
