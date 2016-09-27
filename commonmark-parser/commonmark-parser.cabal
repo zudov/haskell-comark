@@ -17,9 +17,9 @@ library
                        extended/
   exposed-modules:     Text.Commonmark.Parser
                        Text.Commonmark.Parser.Options
-                       Text.Commonmark.Parser.Inline
   other-modules:       Text.Html.Email.Validate
                        Text.Commonmark.Types
+                       Text.Commonmark.Parser.Inline
                        Text.Commonmark.Parser.Util
                        Text.Commonmark.ParserCombinators
                        Data.Char.Extended

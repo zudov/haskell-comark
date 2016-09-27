@@ -5,8 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
 module Text.Commonmark.Parser
-    ( commonmarkToDoc
-    ) where
+    ( commonmarkToDoc ) where
 
 import           Prelude                           hiding (takeWhile)
 

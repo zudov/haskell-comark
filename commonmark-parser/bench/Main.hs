@@ -15,7 +15,6 @@ import           Data.Text.Lazy                 (toStrict)
 import           Data.Text.Lazy.Builder
 
 import           Text.Commonmark.Parser
-import           Text.Commonmark.Parser.Inline
 import           Text.Commonmark.Parser.Options
 import           Text.Commonmark.Syntax
 
