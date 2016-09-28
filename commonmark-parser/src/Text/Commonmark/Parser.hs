@@ -4,6 +4,7 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
+{-# LANGUAGE ViewPatterns        #-}
 module Text.Commonmark.Parser
     ( commonmarkToDoc ) where
 
@@ -39,11 +40,11 @@ import           Text.Commonmark.Types
 --
 --   At the moment no sanitizations are performed besides the ones defined
 --   in the spec.
-commonmarkToDoc :: ParseOptions -> Text -> Doc Text
-commonmarkToDoc opts text = Doc $ processDocument (cont, opts')
+commonmarkToDoc :: [ParserOption] -> Text -> Doc Text
+commonmarkToDoc (parserOptions -> opts) text = Doc $ processDocument (cont, opts')
     where (cont, refmap) = processLines text
-          opts' = opts { parseOptLinkReferences
-                            = liftA2 (<|>) (parseOptLinkReferences opts)
+          opts' = opts { poLinkReferences
+                            = liftA2 (<|>) (poLinkReferences opts)
                                            (lookupLinkReference refmap) }
 
 -- General parsing strategy:
@@ -241,7 +242,7 @@ addContainer ct = modify $ \(ContainerStack top rest) ->
 -- Step 2
 
 -- Convert Document container and reference map into an AST.
-processDocument :: (Container, ParseOptions) -> Blocks Text
+processDocument :: (Container, ParserOptions) -> Blocks Text
 processDocument (Container Document cs, opts) = processElts opts (toList cs)
 processDocument _ = error "top level container is not Document"
 
@@ -249,7 +250,7 @@ processDocument _ = error "top level container is not Document"
 -- This requires grouping text lines into paragraphs
 -- and list items into lists, handling blank lines,
 -- parsing inline contents of texts and resolving referencess.
-processElts :: ParseOptions -> [Elt] -> Blocks Text
+processElts :: ParserOptions -> [Elt] -> Blocks Text
 processElts _ [] = mempty
 
 processElts opts (L _lineNumber lf : rest) =

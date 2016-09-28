@@ -22,7 +22,7 @@ testBlock = do
     describe "Block tests from specification" $ do
         forM_ blockTests $ \SpecTest{..} -> do
            it (show testNumber ++ ": " ++ show testSection) $
-               normalizeDoc (commonmarkToDoc defParseOptions {parseOptNormalize = True} testIn)
+               normalizeDoc (commonmarkToDoc [Normalize] testIn)
                    `shouldBe` normalizeDoc testOut
 
 -- As CMark's AST doesn't preserve the character which was used to indicate

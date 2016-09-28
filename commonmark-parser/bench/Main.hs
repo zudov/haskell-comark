@@ -27,13 +27,13 @@ fromRight (Left _) = error "fromRight"
 
 main :: IO ()
 main = defaultMain
-  [ bgroup "pathological with normalization"           $ benches True  pathological
-  , bgroup "pathological without normalization"        $ benches False pathological
-  , bgroup "markdown-it samples with normalization"    $ benches True  samples
-  , bgroup "markdown-it samples without normalization" $ benches False samples
+  [ bgroup "pathological with normalization"           $ benches [Normalize] pathological
+  , bgroup "pathological without normalization"        $ benches [] pathological
+  , bgroup "markdown-it samples with normalization"    $ benches [Normalize]  samples
+  , bgroup "markdown-it samples without normalization" $ benches [] samples
   ]
 
-benches norm = map (\(n,c) -> bench n $ nf (commonmarkToDoc defParseOptions {parseOptNormalize = norm}) c)
+benches opts = map (\(n,c) -> bench n $ nf (commonmarkToDoc opts) c)
 
 pathological :: [(String, Text)]
 pathological =

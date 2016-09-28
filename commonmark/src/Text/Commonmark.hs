@@ -8,10 +8,7 @@ module Text.Commonmark
     ( -- * Parser
      commonmarkToDoc
       -- ** Parser options
-    ,  ParseOptions
-    , defParseOptions
-    , parseOptNormalize
-    , parseOptLinkReferences
+    , ParserOption(..)
       -- * HTML Rendererer
     , docToHtml
       -- * Common compositions
@@ -25,5 +22,5 @@ import           Text.Commonmark.Parser
 import           Text.Commonmark.Parser.Options
 
 -- | Parse Commonmark document and render it as HTML.
-commonmarkToHtml :: ParseOptions -> Text -> Text
+commonmarkToHtml :: [ParserOption] -> Text -> Text
 commonmarkToHtml opts = docToHtml . commonmarkToDoc opts

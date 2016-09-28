@@ -1,35 +1,49 @@
 module Text.Commonmark.Parser.Options
-    ( ParseOptions
-    , defParseOptions
-    , parseOptNormalize
-    , parseOptLinkReferences
+    ( ParserOption(..)
+    , ParserOptions()
+    , parserOptions
+    , defParserOptions
+    , poNormalize
+    , poLinkReferences
     ) where
 
-import           Data.Text (Text)
+import           Data.Monoid (Endo(Endo, appEndo), mappend)
+import           Data.Text   (Text)
 
-data ParseOptions = ParseOptions
-    { -- | Consolidate adjacent text nodes
-      parseOptNormalize      :: Bool
-      -- | Allows to predefine
-      --   <http://spec.commonmark.org/0.20/#link-reference-definition link reference defenitions>.
-      --
-      --   References are represented with a mapping from a
-      --   <http://spec.commonmark.org/0.20/#link-text link text> to a pair of a
-      --   <http://spec.commonmark.org/0.20/#link-destination link destination>
-      --   and an optional
-      --   <http://spec.commonmark.org/0.20/#link-title link title>.
-      --
-      --   During parsing the link references defined in a document would be
-      --   collected into additional mapping. When link references are being
-      --   mapping defined in options takes precedence over mapping found in
-      --   the document.
-      --
-      --   TODO: Examples
-    , parseOptLinkReferences :: Text -> Maybe (Text, Maybe Text)
+data ParserOption
+  = -- | Consolidate adjacent text nodes
+    Normalize
+    -- | Allows to predefine
+    --   <http://spec.commonmark.org/0.20/#link-reference-definition link reference defenitions>.
+    --
+    --   References are represented with a mapping from a
+    --   <http://spec.commonmark.org/0.20/#link-text link text> to a pair of a
+    --   <http://spec.commonmark.org/0.20/#link-destination link destination>
+    --   and an optional
+    --   <http://spec.commonmark.org/0.20/#link-title link title>.
+    --
+    --   During parsing the link references defined in a document would be
+    --   collected into additional mapping. When link references are being
+    --   mapping defined in options takes precedence over mapping found in
+    --   the document.
+    --
+    --   TODO: Examples
+  | LinkReferences (Text -> Maybe (Text, Maybe Text))
+
+data ParserOptions = ParserOptions
+    { poNormalize      :: Bool
+    , poLinkReferences :: Text -> Maybe (Text, Maybe Text)
     }
 
-defParseOptions :: ParseOptions
-defParseOptions = ParseOptions
-  { parseOptNormalize = False
-  , parseOptLinkReferences = const Nothing
+parserOptions :: [ParserOption] -> ParserOptions
+parserOptions = ($ defParserOptions) . appEndo . foldMap (Endo . optFn)
+  where
+    optFn :: ParserOption -> ParserOptions -> ParserOptions
+    optFn Normalize o          = o { poNormalize = True }
+    optFn (LinkReferences f) o = o { poLinkReferences = f }
+
+defParserOptions :: ParserOptions
+defParserOptions = ParserOptions
+  { poNormalize      = False
+  , poLinkReferences = const Nothing
   }

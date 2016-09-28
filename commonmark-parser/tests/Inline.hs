@@ -23,7 +23,7 @@ testInline = do
     describe "Inline tests from specification" $ do
         forM_ inlineTests $ \SpecTest{..} -> do
            it (show testNumber ++ ": " ++ show testSection) $ do
-               let actual   = commonmarkToDoc defParseOptions {parseOptNormalize = True} testIn
+               let actual   = commonmarkToDoc [Normalize] testIn
                    expected = normalizeDoc $ nodeToDoc $ commonmarkToNode [optNormalize]
                                                                           testIn
                case docInline (unsafeCoerce actual) of

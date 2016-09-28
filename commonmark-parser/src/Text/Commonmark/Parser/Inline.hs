@@ -36,18 +36,18 @@ import           Text.Commonmark.Syntax.Builder
 import           Text.Html.Email.Validate
 import           Text.Html.Entity
 
-parseInlines :: ParseOptions -> Text -> Inlines Text
+parseInlines :: ParserOptions -> Text -> Inlines Text
 parseInlines opts t = normalization $
         case parse (msum <$> many (pInline opts) <* endOfInput) t of
             Left e -> error ("parseInlines: " ++ show e) -- should not happen
             Right r -> r
     where normalization
-            | parseOptNormalize opts = fmap (fmap (TL.toStrict . TB.toLazyText))
+            | poNormalize opts = fmap (fmap (TL.toStrict . TB.toLazyText))
                                      . normalize
                                      . fmap (fmap TB.fromText)
             | otherwise = id
 
-pInline :: ParseOptions -> Parser (Inlines Text)
+pInline :: ParserOptions -> Parser (Inlines Text)
 pInline opts =  pText
             <|> pHardbreak
             <|> pSoftbreak
@@ -254,7 +254,7 @@ pLinkOpener = do
 pEmphLinkDelim :: Parser Token
 pEmphLinkDelim = pEmphDelimToken '*' <|> pEmphDelimToken '_' <|> pLinkOpener
 
-pEmphLink :: ParseOptions -> Parser (Inlines Text)
+pEmphLink :: ParserOptions -> Parser (Inlines Text)
 pEmphLink opts = do
   d <- pEmphLinkDelim
   foldMap unToken . processEmphTokens <$> go (Seq.singleton d)
@@ -298,7 +298,7 @@ pEmphLink opts = do
     pReferenceLink constr content lbl = do
       ref <- (Just <$> pLinkLabel) <|> (lbl <$ optional "[]")
       maybe mzero (pure . singleton . uncurry (constr content))
-                  (parseOptLinkReferences opts =<< ref)
+                  (poLinkReferences opts =<< ref)
 
 processEmphTokens :: Seq Token -> Seq Token
 processEmphTokens = Seq.reverse . foldl (flip processEmphToken) Seq.empty
