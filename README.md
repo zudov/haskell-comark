@@ -1,6 +1,6 @@
-# commonmark-haskell
+# haskell-commonmark
 
-[![Build Status](https://travis-ci.org/zudov/commonmark-haskell.svg?branch=master)](https://travis-ci.org/zudov/commonmark-haskell)
+[![Build Status](https://travis-ci.org/zudov/haskell-commonmark.svg?branch=master)](https://travis-ci.org/zudov/haskell-commonmark)
 
 [![commonmark on Hackage](https://img.shields.io/hackage/v/commonmark.svg)](http://hackage.haskell.org/package/commonmark)
 
