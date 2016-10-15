@@ -27,46 +27,46 @@ matrix:
   # https://github.com/hvr/multi-ghc-travis
   - env: BUILD=cabal GHCVER=7.8.4 CABALVER=1.18 HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC 7.8.4"
-    addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4,happy-1.19.5,alex-3.1.7,python3], sources: [hvr-ghc]}}
   - env: BUILD=cabal GHCVER=7.10.3 CABALVER=1.22 HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC 7.10.3"
-    addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,happy-1.19.5,alex-3.1.7,python3], sources: [hvr-ghc]}}
   - env: BUILD=cabal GHCVER=8.0.1 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC 8.0.1"
-    addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.1,happy-1.19.5,alex-3.1.7,python3], sources: [hvr-ghc]}}
 
   # Build with the newest GHC and cabal-install. This is an accepted failure,
   # see below.
   - env: BUILD=cabal GHCVER=head  CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC HEAD"
-    addons: {apt: {packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.7,python3], sources: [hvr-ghc]}}
 
   # The Stack builds. We can pass in arbitrary Stack arguments via the ARGS
   # variable, such as using --stack-yaml to point to a different file.
   - env: BUILD=stack ARGS=""
     compiler: ": #stack default"
-    addons: {apt: {packages: [libgmp,libgmp-dev]}}
+    addons: {apt: {packages: [libgmp,libgmp-dev,python3]}}
 
   - env: BUILD=stack ARGS="--resolver lts-2"
     compiler: ": #stack 7.8.4"
-    addons: {apt: {packages: [libgmp,libgmp-dev]}}
+    addons: {apt: {packages: [libgmp,libgmp-dev,python3]}}
 
   - env: BUILD=stack ARGS="--resolver lts-3"
     compiler: ": #stack 7.10.2"
-    addons: {apt: {packages: [libgmp,libgmp-dev]}}
+    addons: {apt: {packages: [libgmp,libgmp-dev,python3]}}
 
   - env: BUILD=stack ARGS="--resolver lts-6"
     compiler: ": #stack 7.10.3"
-    addons: {apt: {packages: [libgmp,libgmp-dev]}}
+    addons: {apt: {packages: [libgmp,libgmp-dev,python3]}}
 
   - env: BUILD=stack ARGS="--resolver lts-7"
     compiler: ": #stack 8.0.1"
-    addons: {apt: {packages: [libgmp,libgmp-dev]}}
+    addons: {apt: {packages: [libgmp,libgmp-dev,python3]}}
 
   # Nightly builds are allowed to fail
   - env: BUILD=stack ARGS="--resolver nightly"
     compiler: ": #stack nightly"
-    addons: {apt: {packages: [libgmp,libgmp-dev]}}
+    addons: {apt: {packages: [libgmp,libgmp-dev,python3]}}
 
   allow_failures:
   - env: BUILD=cabal GHCVER=head  CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
@@ -110,6 +110,7 @@ install:
 - if [ -f configure.ac ]; then autoreconf -i; fi
 - |
   set -ex
+  ./spec/test/spec_tests.py -s spec/spec.txt --dump-tests > ./commonmark-testutils/spec.json
   case "$BUILD" in
     stack)
       stack --no-terminal --install-ghc $ARGS test --only-dependencies
@@ -117,7 +118,7 @@ install:
     cabal)
       cabal --version
       travis_retry cabal update
-      cabal install --only-dependencies --enable-tests--force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+      cabal install --only-dependencies --enable-tests --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
       ;;
   esac
   set +ex
@@ -127,11 +128,9 @@ script:
   set -ex
   case "$BUILD" in
     stack)
-      make spec    
       stack --no-terminal $ARGS test --haddock --no-haddock-deps
       ;;
     cabal)
-      make spec
       cabal install --enable-tests --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
 
       ORIGDIR=$(pwd)

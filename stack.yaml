@@ -13,3 +13,4 @@ packages:
 
 extra-deps:
     - html5-entity-0.2.0.3
+    - control-bool-0.2.1
