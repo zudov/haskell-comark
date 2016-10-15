@@ -30,11 +30,15 @@ executables:
     - -Wall
     - -O2
     - -threaded
-    - -fprof-auto
-    - -with-rtsopts=-N -p -s -h -i0.1
     when:
     - condition: flag(profile)
       then:
+        ghc-options:
+          - -Wall
+          - -O2
+          - -threaded
+          - -fprof-auto
+          - -with-rtsopts=-N -p -s -h -i0.1
         dependencies:
         - base >=4.7 && <5
         - text
@@ -72,5 +76,5 @@ benchmarks:
 flags:
   profile:
     description: Build profiling executables
-    manual: false
+    manual: true
     default: false
