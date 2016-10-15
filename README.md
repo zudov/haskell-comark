@@ -25,9 +25,9 @@ repo:
 	  and the reference implementation (libcmark).
 - [X] Handle pathological inputs. Benchmarks are run against `markdown-it`'s samples
       and over notoriously known nested parenthesis/brackets (`"[" * 50000 + "foo" + "]" * 50000`)
-- [ ] Revise module structure, names, and (re-)exports.
+- [X] Revise module structure, names, and (re-)exports.
 - [ ] Add to hackage and stackage.
-- [ ] Document things up.
+- [X] Document things up.
 - [ ] Extend ecosystem with additional libraries that ease the integration
       (commonmark-blaze, commonmark-lucid, commonmark-json)
 - [ ] Add helpers for processing/walking the AST and examples of typical manipulations.
