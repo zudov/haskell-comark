@@ -1,7 +1,7 @@
 name:                commonmark-ast
 version:             0.1.0.0
-synopsis:            AST definitions used in the commonmark family of packages.
--- description:         
+synopsis:            Definitions of AST that represents a Commonmark (markdown) document.
+description:         See https://github.com/zudov/haskell-commonmark#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Konstantin Zudov
@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Text.Commonmark.Syntax
                        Text.Commonmark.Syntax.Builder
-  -- other-modules:
+
   other-extensions:    DeriveDataTypeable
                        DeriveGeneric
   build-depends:       base >=4.7 && <5.0

@@ -16,7 +16,8 @@ Data-Files:          spec.json
 library
   exposed-modules:     Text.Commonmark.TestUtils.CMark
                        Text.Commonmark.TestUtils.Spec
-  other-modules:       Text.Commonmark.TestUtils.Spec.TH
+  other-modules:       Blocks
+                       Text.Commonmark.TestUtils.Spec.TH
                        Paths_commonmark_testutils
   other-extensions:    TemplateHaskell
                        OverloadedStrings

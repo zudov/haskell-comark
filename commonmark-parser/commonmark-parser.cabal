@@ -1,7 +1,7 @@
 name:                commonmark-parser
 version:             0.1.0.0
-synopsis:            The parser of the commonmark family of packages.
--- description:         
+synopsis:            Parser for Commonmark (markdown)
+description:         See https://github.com/zudov/haskell-commonmark#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Konstantin Zudov
@@ -9,7 +9,6 @@ maintainer:          co@zudov.me
 copyright:           (c) Konstantin Zudov, 2014, 2015, 2016
 category:            Text
 build-type:          Simple
--- extra-source-files:  
 cabal-version:       >=1.10
 
 library
@@ -31,7 +30,7 @@ library
                        OverloadedStrings
                        LambdaCase
                        RecordWildCards
-  build-depends:       base >=4.7
+  build-depends:       base >=4.7 && < 5.0
                      , text
                      , html5-entity  >= 0.2.0.1
                      , control-bool
@@ -39,12 +38,13 @@ library
                      , transformers
                      , commonmark-ast
   default-language:    Haskell2010
-  ghc-options:         -O2 -Wall -threaded
+  ghc-options:         -Wall
 
 test-suite test
     hs-source-dirs:    tests/
     main-is:           Main.hs
     other-modules:     Inline
+                       Blocks
     type:              exitcode-stdio-1.0
     ghc-options:       -Wall
     build-depends:     base >= 4.7
