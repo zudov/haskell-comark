@@ -5,7 +5,7 @@
 name:                commonmark-ast
 version:             0.1.0.0
 synopsis:            Definitions of AST that represents a Commonmark (markdown) document.
-description:         See https://github.com/zudov/haskell-commonmark#readme
+description:         See <https://github.com/zudov/haskell-commonmark#readme README>
 license:             BSD3
 license-file:        LICENSE
 author:              Konstantin Zudov

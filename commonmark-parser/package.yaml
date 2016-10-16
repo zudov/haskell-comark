@@ -1,7 +1,7 @@
 name: commonmark-parser
 version: '0.1.0.0'
 synopsis: Parser for Commonmark (markdown)
-description: See https://github.com/zudov/haskell-commonmark#readme
+description: See <https://github.com/zudov/haskell-commonmark#readme README>
 category: Text
 author: Konstantin Zudov
 maintainer: co@zudov.me

@@ -5,7 +5,7 @@
 name:                commonmark
 version:             0.1.0.0
 synopsis:            Commonmark processing in pure haskell.
-description:         See https://github.com/zudov/haskell-commonmark#readme
+description:         See <https://github.com/zudov/haskell-commonmark#readme README>
 license:             BSD3
 license-file:        LICENSE
 author:              Konstantin Zudov
