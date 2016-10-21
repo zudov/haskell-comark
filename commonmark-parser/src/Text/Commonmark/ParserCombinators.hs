@@ -24,7 +24,7 @@ module Text.Commonmark.ParserCombinators (
   , takeWhile
   , takeTill
   , takeWhile1
-  , takeText
+  , untilTheEnd
   , skip
   , skipWhile
   , skipWhile1

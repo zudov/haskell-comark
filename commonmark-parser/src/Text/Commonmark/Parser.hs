@@ -190,7 +190,7 @@ closeContainer = do
   ContainerStack top rest <- get
   case top of
     (Container Reference cs'') ->
-      case parse ((,) <$> pReference <*> takeText) (T.strip $ T.joinLines $ map extractText $ toList textlines) of
+      case parse ((,) <$> pReference <*> untilTheEnd) (T.strip $ T.joinLines $ map extractText $ toList textlines) of
            Right ((lab, lnk, tit), unconsumed) -> do
              tell (M.singleton (normalizeReference lab) (lnk, tit))
              case rest of
@@ -476,9 +476,9 @@ tryOpenContainers :: [Container] -> Text -> (Text, Int)
 tryOpenContainers cs t = case parse (scanners $ map containerContinue cs) t of
                          Right (t', n) -> (t', n)
                          Left e -> error $ "error parsing scanners: " ++ show e
-  where scanners [] = (,0) <$> takeText
+  where scanners [] = (,0) <$> untilTheEnd
         scanners (p:ps) = (p *> scanners ps)
-                       <|> ((,length (p:ps)) <$> takeText)
+                       <|> ((,length (p:ps)) <$> untilTheEnd)
 
 -- Try to match parsers for new containers.  Return list of new
 -- container types, and the leaf to add inside the new containers.
@@ -496,7 +496,7 @@ tryNewContainers afterListItem lastLineIsText offset t =
             Nothing -> (regContainers,) <$> leaf lastLineIsText
 
 textLineOrBlank :: Parser Leaf
-textLineOrBlank = consolidate <$> takeText
+textLineOrBlank = consolidate <$> untilTheEnd
   where consolidate ts | T.all (==' ') ts = BlankLine ts
                        | otherwise        = TextLine  ts
 
@@ -542,7 +542,7 @@ parseAtxHeadingStart = do
     6 -> Heading6
     _ -> error $ "IMPOSSIBLE HAPPENED: parseAtxHeading parsed more than 6 characters "
 parseAtxHeadingContent :: Parser Text
-parseAtxHeadingContent = T.strip . removeATXSuffix <$> takeText
+parseAtxHeadingContent = T.strip . removeATXSuffix <$> untilTheEnd
   where removeATXSuffix t =
           case dropTrailingHashes of
                  t' | T.null t' -> t'

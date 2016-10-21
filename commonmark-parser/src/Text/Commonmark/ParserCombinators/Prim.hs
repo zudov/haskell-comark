@@ -21,7 +21,7 @@ module Text.Commonmark.ParserCombinators.Prim
   , endOfInput
   , takeWhile
   , takeWhile1
-  , takeText
+  , untilTheEnd
   , skip
   , skipWhile
   , skipWhile1
@@ -261,11 +261,11 @@ takeWhile1 f = Parser $ \st ->
          | otherwise -> success (advance st t) t
 {-# INLINE takeWhile1 #-}
 
-takeText :: Parser Text
-takeText = Parser $ \st ->
-  let t = subject st in
-  success (advance st t) t
-{-# INLINE takeText #-}
+-- | Consumes all the available input (until endOfInput) and returns it.
+untilTheEnd :: Parser Text
+untilTheEnd = Parser $ \st ->
+  success (advance st (subject st)) (subject st)
+{-# INLINE untilTheEnd #-}
 
 skip :: (Char -> Bool) -> Parser ()
 skip f = Parser $ \st ->
