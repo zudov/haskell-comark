@@ -212,15 +212,15 @@ satisfy f = Parser g
                     _ -> failure st "character meeting condition"
 {-# INLINE satisfy #-}
 
+-- | Get the next character without consuming it.
 peekChar :: Parser (Maybe Char)
-peekChar = Parser $ \st ->
-             case T.uncons (subject st) of
-                  Just (c, _) -> success st (Just c)
-                  Nothing     -> success st Nothing
+peekChar = maybeHead . subject <$> getState
+  where maybeHead = fmap fst . T.uncons
 {-# INLINE peekChar #-}
 
+-- | Get the last consumed character.
 peekLastChar :: Parser (Maybe Char)
-peekLastChar = Parser $ \st -> success st (lastChar st)
+peekLastChar = lastChar <$> getState
 {-# INLINE peekLastChar #-}
 
 -- | Takes a parser that returns a 'Text', runs that
