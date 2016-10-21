@@ -9,7 +9,6 @@ module Text.Commonmark.ParserCombinators (
   , parseWithUnconsumed
   , (<?>)
   , satisfy
-  , choice
   , withConsumed
   , consumedBy
   , peekChar

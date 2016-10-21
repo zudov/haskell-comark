@@ -15,7 +15,6 @@ module Text.Commonmark.ParserCombinators.Prim
   , getPosition
   , setPosition
   , satisfy
-  , choice
   , peekChar
   , peekLastChar
   , replacing
@@ -212,9 +211,6 @@ satisfy f = Parser g
                          success (advance st (T.singleton c)) c
                     _ -> failure st "character meeting condition"
 {-# INLINE satisfy #-}
-
-choice :: Alternative f => [f a] -> f a
-choice = foldr (<|>) empty
 
 peekChar :: Parser (Maybe Char)
 peekChar = Parser $ \st ->

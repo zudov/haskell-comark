@@ -146,7 +146,7 @@ containerContinue c = case containerType c of
 
 -- Defines parsers that open new containers.
 containerStart :: Bool -> Bool -> Parser ContainerType
-containerStart afterListItem lastLineIsText = choice
+containerStart afterListItem lastLineIsText = asum
     [ scanNonindentSpace *> pure BlockQuote <* scanBlockquoteStart
     , parseListMarker afterListItem lastLineIsText
     ]
@@ -154,7 +154,7 @@ containerStart afterListItem lastLineIsText = choice
 -- Defines parsers that open new verbatim containers (containers
 -- that take only TextLine and BlankLine as children).
 verbatimContainerStart :: Bool -> Parser ContainerType
-verbatimContainerStart lastLineIsText = choice
+verbatimContainerStart lastLineIsText = asum
    [ scanNonindentSpace *> parseCodeFence
    , do guard (not lastLineIsText)
         scanIndentSpace
@@ -502,7 +502,7 @@ textLineOrBlank = consolidate <$> takeText
 
 -- Parse a leaf node.
 leaf :: Bool -> Parser Leaf
-leaf lastLineIsText = scanNonindentSpace *> choice
+leaf lastLineIsText = scanNonindentSpace *> asum
     [ ATXHeading <$> parseAtxHeadingStart <*> parseAtxHeadingContent
     , guard lastLineIsText *> parseSetextToken
     , Rule <$ scanTBreakLine
@@ -589,7 +589,7 @@ parseCodeFence = do
 pHtmlBlockStart :: Bool -> Parser Condition
 pHtmlBlockStart lastLineIsText = lookAhead $ do
   discardOpt scanNonindentSpace
-  choice starters
+  asum starters
   where
     starters = [ condition1 <$ blockStart condition1
                , condition2 <$ blockStart condition2
@@ -618,7 +618,7 @@ lineContains terms = do
 condition1, condition2, condition3, condition4, condition5, condition6, condition7 :: Condition
 condition1 = Condition
   { blockStart = do
-      _ <- choice $ map stringCaseless ["<script", "<pre", "<style"]
+      _ <- asum $ map stringCaseless ["<script", "<pre", "<style"]
       void pWhitespace <|> void ">" <|> lineEnding <|> endOfInput
   , blockEnd = lineContains ["</script>", "</pre>", "</style>"]
   }
@@ -738,5 +738,5 @@ parseListNumber lastLineIsText = do
     when lastLineIsText $
       guard $ num == 1
     guard $ num < (10 ^ (9 :: Integer))
-    wrap <- choice [Period <$ scanChar '.', Paren <$ scanChar ')']
+    wrap <- asum [Period <$ scanChar '.', Paren <$ scanChar ')']
     return $ Ordered wrap (fromInteger num)

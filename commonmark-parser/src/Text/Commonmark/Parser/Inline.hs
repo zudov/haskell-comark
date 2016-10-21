@@ -17,10 +17,12 @@ import           Control.Applicative
 import           Control.Bool
 import           Control.Monad                     hiding (mapM_)
 import           Data.Char.Extended
+import           Data.Foldable                     (asum)
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Sequence
-  (Seq, ViewL(..), ViewR(..), singleton, viewl, viewr, (<|), (><), (|>))
+import           Data.Sequence                     (Seq, ViewL (..), ViewR (..),
+                                                    singleton, viewl, viewr,
+                                                    (<|), (><), (|>))
 import qualified Data.Sequence                     as Seq
 import           Data.Text                         (Text)
 import qualified Data.Text                         as T
@@ -90,7 +92,7 @@ pBackslashed :: Parser (Inlines Text)
 pBackslashed = str <$> pBackslashedChar
 
 pHardbreak :: Parser (Inlines Text)
-pHardbreak = singleton HardBreak <$ choice
+pHardbreak = singleton HardBreak <$ asum
     [ char '\\' *> lineEnding *> skipWhile (== ' ')
     , "  " *> skipWhile (== ' ') *> lineEnding *> skipWhile (== ' ')]
 
@@ -115,7 +117,7 @@ pCode = do
 
 -- [ Raw Html ] ----------------------------------------------------------------
 pHtml :: Parser (Inlines Text)
-pHtml = singleton . RawHtml <$> consumedBy (choice scanners)
+pHtml = singleton . RawHtml <$> consumedBy (asum scanners)
   where
     scanners = [ void openTag, void closeTag, void comment
                , void instruct, void declar, void cdata
@@ -263,7 +265,7 @@ pEmphLink opts = do
         ((char ']' >> lookForLinkOrImage delimStack >>= go)
         <|> (delimStack <$ endOfInput)
         <|> (go . (delimStack |>) =<< pEmphLinkDelim)
-        <|> (go . (addInlines delimStack) =<< (choice inline)))
+        <|> (go . (addInlines delimStack) =<< (asum inline)))
     inline = [ pCode, pAutolink, pHtml, pText, pHardbreak, pSoftbreak
              , pBackslashed, pEntity, pFallback ]
 
