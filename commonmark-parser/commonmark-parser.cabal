@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.14.1.
+-- This file has been generated from package.yaml by hpack version 0.15.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -26,6 +26,7 @@ library
       Text.Commonmark.Parser.Inline
       Text.Commonmark.Parser.Util
       Text.Commonmark.ParserCombinators
+      Text.Commonmark.ParserCombinators.Prim
       Text.Commonmark.Types
       Text.Html.Email.Validate
       Data.Char.Extended
