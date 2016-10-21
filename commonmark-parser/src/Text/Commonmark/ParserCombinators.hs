@@ -5,6 +5,7 @@
 module Text.Commonmark.ParserCombinators (
     Position(..)
   , Parser
+  , ParseError(..)
   , parse
   , parseWithUnconsumed
   , (<?>)
