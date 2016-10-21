@@ -40,10 +40,10 @@ import           Prelude             hiding (takeWhile)
 
 data Position
   = Position
-     { line   :: Int
-     , column :: Int
-     , point  :: Int
-     } deriving (Ord, Eq)
+      { line   :: Int
+      , column :: Int
+      , point  :: Int
+      } deriving (Ord, Eq)
 
 instance Show Position where
   show (Position ln cn pn) =
