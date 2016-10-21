@@ -311,15 +311,17 @@ scan s0 f = Parser $ go s0 []
 
 lookAhead :: Parser a -> Parser a
 lookAhead p = Parser $ \st ->
-  case evalParser p st of
-       Right (_,x) -> success st x
-       Left _      -> failure st "lookAhead"
+  either
+    (const (failure st "lookAhead"))
+    (success st . snd)
+    (evalParser p st)
 {-# INLINE lookAhead #-}
 
 notFollowedBy :: Parser a -> Parser ()
 notFollowedBy p = Parser $ \st ->
-  case evalParser p st of
-       Right (_,_) -> failure st "notFollowedBy"
-       Left _      -> success st ()
+  either
+    (const (success st ()))
+    (const (failure st "notFollowedBy"))
+    (evalParser p st)
 {-# INLINE notFollowedBy #-}
 
