@@ -201,7 +201,7 @@ getState :: Parser ParserState
 getState = Parser (\st -> success st st)
 
 getPosition :: Parser Position
-getPosition = Parser $ \st -> success st (position st)
+getPosition = position <$> getState
 {-# INLINE getPosition #-}
 
 satisfy :: (Char -> Bool) -> Parser Char
