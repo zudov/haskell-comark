@@ -24,18 +24,18 @@ nfb :: Parser a -> Parser ()
 nfb = notFollowedBy
 
 nfbChar :: Char -> Scanner
-nfbChar c = nfb (skip (== c))
+nfbChar = nfb . scanChar
 
 isAsciiPunctuation :: Char -> Bool
 isAsciiPunctuation = inClass "!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-"
 
 -- Scan a specified character.
 scanChar :: Char -> Scanner
-scanChar c = skip (== c)
+scanChar = skip . (==)
 
 -- Scan a specified character.
 scanChars :: Char -> Scanner
-scanChars c = skipMany (scanChar c)
+scanChars = skipMany . scanChar
 
 -- Scan tab or four spaces.
 scanIndentSpace :: Scanner
@@ -68,7 +68,8 @@ countNonindentSpace = T.length <$> upToCountChars 3 (== ' ')
 
 upToCountChars :: Int -> (Char -> Bool) -> Parser Text
 upToCountChars cnt f =
-  scan 0 (\n c -> if n < cnt && f c then Just (n+1) else Nothing)
+  scan 0 $ \n c ->
+    n + 1 <$ guard (n < cnt && f c)
 
 -- Scan a blankline.
 scanBlankline :: Scanner
@@ -105,10 +106,14 @@ scanWhitespaceNL = do
  discardOpt scanWhitespaceNoNL
 
 scanWhitespaceNoNL :: Scanner
-scanWhitespaceNoNL = skipWhile1 (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
+scanWhitespaceNoNL =
+  skipWhile1
+    (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
 
 skipWhitespaceNoNL :: Scanner
-skipWhitespaceNoNL = skipWhile (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
+skipWhitespaceNoNL =
+  skipWhile
+    (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
 
 -- | [unicode whitespace] as in spec
 isUnicodeWhitespace :: Char -> Bool
@@ -120,10 +125,12 @@ pUnicodeWhitespace = takeWhile1 isWhitespace
 normalizeReference :: Text -> Text
 normalizeReference = T.toCaseFold . T.concat . T.split isSpace
 
-lookupLinkReference :: ReferenceMap
-                    -> Text                -- reference label
-                    -> Maybe (Text, Maybe Text)  -- (url, title)
-lookupLinkReference refmap key = M.lookup (normalizeReference key) refmap
+lookupLinkReference
+  :: ReferenceMap
+  -> Text                -- reference label
+  -> Maybe (Text, Maybe Text)  -- (url, title)
+lookupLinkReference refmap key =
+  M.lookup (normalizeReference key) refmap
 
 parenthesize :: Text -> Text
 parenthesize x = "(" <> x <> ")"
