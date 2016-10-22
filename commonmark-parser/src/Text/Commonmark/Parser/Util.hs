@@ -1,5 +1,30 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Text.Commonmark.Parser.Util where
+module Text.Commonmark.Parser.Util
+  ( lineEnding
+  , skipWhitespaceNoNL
+  , scanWhitespaceNL
+  , isWhitespace
+  , parenthesize
+  , skipWhitespace
+  , nfb
+  , isUnicodeWhitespace
+  , isAsciiPunctuation
+  , Scanner ()
+  , scanChar
+  , countSpaces
+  , scanIndentSpace
+  , scanBlankline
+  , pWhitespace
+  , scanSpaces
+  , scanNonindentSpace
+  , upToCountChars
+  , lookupLinkReference
+  , scanSpacesToColumn
+  , normalizeReference
+  , scanSpacesUpToColumn
+  , scanChars
+  , countNonindentSpace
+  ) where
 
 import           Control.Applicative
 import           Control.Bool
@@ -22,9 +47,6 @@ lineEnding = void ("\n" <|> "\r\n" <|> "\r")
 
 nfb :: Parser a -> Parser ()
 nfb = notFollowedBy
-
-nfbChar :: Char -> Scanner
-nfbChar = nfb . scanChar
 
 isAsciiPunctuation :: Char -> Bool
 isAsciiPunctuation = inClass "!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-"
@@ -82,11 +104,6 @@ scanSpaces = skipWhile (==' ')
 countSpaces :: Parser Int
 countSpaces = T.length <$> takeWhile (== ' ')
 
--- Scan 0 or more spaces, and optionally a newline
--- and more spaces.
-scanSpnl :: Scanner
-scanSpnl = scanSpaces *> discardOpt (char '\n' *> scanSpaces)
-
 -- | A [whitespace character] as in spec
 isWhitespace :: Char -> Bool
 isWhitespace = (`elem` (" \t\n\r\f\v" :: [Char]))
@@ -119,9 +136,6 @@ skipWhitespaceNoNL =
 isUnicodeWhitespace :: Char -> Bool
 isUnicodeWhitespace = isSpace
 
-pUnicodeWhitespace :: Parser Text
-pUnicodeWhitespace = takeWhile1 isWhitespace
-
 normalizeReference :: Text -> Text
 normalizeReference = T.toCaseFold . T.concat . T.split isSpace
 
@@ -134,11 +148,3 @@ lookupLinkReference refmap key =
 
 parenthesize :: Text -> Text
 parenthesize x = "(" <> x <> ")"
-
-bracketize :: Text -> Text
-bracketize x = "[" <> x <> "]"
-
-monoidToMaybe :: (Eq a, Monoid a) => a -> Maybe a
-monoidToMaybe a
-    | a == mempty = Nothing
-    | otherwise = Just a
