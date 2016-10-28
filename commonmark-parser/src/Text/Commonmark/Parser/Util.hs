@@ -1,22 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 module Text.Commonmark.Parser.Util
-  ( pLineEnding
+  ( Scanner ()
   , isLineEnding
+  , pLineEnding
   , isWhitespace
-  , parenthesize
-  , pNonIndentSpaces
-  , isUnicodeWhitespace
-  , isAsciiPunctuation
-  , Scanner ()
-  , pIndentSpaces
-  , pBlankline
   , pWhitespace
   , pSpaces
+  , pSpacesUpToColumn
+  , pIndentSpaces
+  , pNonIndentSpaces
+  , pBlankline
+  , isUnicodeWhitespace
+  , isAsciiPunctuation
   , satisfyUpTo
   , lookupLinkReference
   , normalizeReference
-  , pSpacesUpToColumn
+  , parenthesize
   ) where
 
 import           Control.Applicative
@@ -34,10 +34,6 @@ import           Text.Commonmark.Types
 
 type Scanner = Parser ()
 
--- | A newline (U+000A), carriage return (U+000D), or carriage return followed by newline.
-pLineEnding :: Parser Text
-pLineEnding = "\n" <|> "\r\n" <|> "\r"
-
 -- | Predicate for line ending character (newline or carriage return).
 --   NB: something like `satisfy isLineEnding` won't properly parse a
 --   line ending, when given '\r\n' as input it would just consume '\r'
@@ -46,8 +42,28 @@ pLineEnding = "\n" <|> "\r\n" <|> "\r"
 isLineEnding :: Char -> Bool
 isLineEnding = (== '\r') <||> (== '\n')
 
-isAsciiPunctuation :: Char -> Bool
-isAsciiPunctuation = inClass "!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-"
+-- | A newline (U+000A), carriage return (U+000D), or carriage return followed by newline.
+pLineEnding :: Parser Text
+pLineEnding = "\n" <|> "\r\n" <|> "\r"
+
+-- | A [whitespace character] as in spec
+isWhitespace :: Char -> Bool
+isWhitespace = (`elem` (" \t\n\r\f\v" :: [Char]))
+
+-- | [whitespace] as in spec
+pWhitespace :: Parser Text
+pWhitespace = takeWhile1 isWhitespace
+
+pSpaces :: Parser Text
+pSpaces = takeWhile (== ' ')
+
+pSpacesUpToColumn :: Int -> Parser Text
+pSpacesUpToColumn col = do
+  currentCol <- column <$> getPosition
+  let distance = col - currentCol
+  if distance >= 1
+    then satisfyUpTo distance (== ' ')
+    else pure ""
 
 pIndentSpaces :: Parser Text
 pIndentSpaces = do
@@ -59,43 +75,24 @@ pIndentSpaces = do
     then mzero
     else pure $ T.snoc nonIndentSpaces moreSpace
     
-pSpacesUpToColumn :: Int -> Parser Text
-pSpacesUpToColumn col = do
-  currentCol <- column <$> getPosition
-  let distance = col - currentCol
-  if distance >= 1
-    then satisfyUpTo distance (== ' ')
-    else pure ""
-
 -- Scan 0-3 spaces.
 pNonIndentSpaces :: Parser Text
 pNonIndentSpaces = satisfyUpTo 3 (== ' ')
 
-satisfyUpTo :: Int -> (Char -> Bool) -> Parser Text
-satisfyUpTo cnt f =
-  scan 0 $ \n c ->
-    n + 1 <$ guard (n < cnt && f c)
-
 pBlankline :: Parser Text
 pBlankline = pSpaces <* endOfInput
-
-pSpaces :: Parser Text
-pSpaces = takeWhile (== ' ')
-
--- | A [whitespace character] as in spec
-isWhitespace :: Char -> Bool
-isWhitespace = (`elem` (" \t\n\r\f\v" :: [Char]))
-
--- | [whitespace] as in spec
-pWhitespace :: Parser Text
-pWhitespace = takeWhile1 isWhitespace
 
 -- | [unicode whitespace] as in spec
 isUnicodeWhitespace :: Char -> Bool
 isUnicodeWhitespace = isSpace
 
-normalizeReference :: Text -> Text
-normalizeReference = T.toCaseFold . T.concat . T.split isSpace
+isAsciiPunctuation :: Char -> Bool
+isAsciiPunctuation = inClass "!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-"
+
+satisfyUpTo :: Int -> (Char -> Bool) -> Parser Text
+satisfyUpTo cnt f =
+  scan 0 $ \n c ->
+    n + 1 <$ guard (n < cnt && f c)
 
 lookupLinkReference
   :: ReferenceMap
@@ -103,6 +100,9 @@ lookupLinkReference
   -> Maybe (Text, Maybe Text)  -- (url, title)
 lookupLinkReference refmap key =
   M.lookup (normalizeReference key) refmap
+
+normalizeReference :: Text -> Text
+normalizeReference = T.toCaseFold . T.concat . T.split isSpace
 
 parenthesize :: Text -> Text
 parenthesize x = "(" <> x <> ")"
