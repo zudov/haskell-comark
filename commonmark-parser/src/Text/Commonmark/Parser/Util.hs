@@ -6,7 +6,6 @@ module Text.Commonmark.Parser.Util
   , isWhitespace
   , parenthesize
   , skipWhitespace
-  , nfb
   , isUnicodeWhitespace
   , isAsciiPunctuation
   , Scanner ()
@@ -44,9 +43,6 @@ type Scanner = Parser ()
 -- | A newline (U+000A), carriage return (U+000D), or carriage return + newline.
 lineEnding :: Scanner
 lineEnding = void ("\n" <|> "\r\n" <|> "\r")
-
-nfb :: Parser a -> Parser ()
-nfb = notFollowedBy
 
 isAsciiPunctuation :: Char -> Bool
 isAsciiPunctuation = inClass "!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-"

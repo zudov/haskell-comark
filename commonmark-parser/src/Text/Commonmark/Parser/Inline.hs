@@ -106,7 +106,7 @@ pSoftbreak = discardOpt (char ' ') *> lineEnding
 pCode :: Parser (Inlines Text)
 pCode = do
     ticks <- backtickWord
-    let end = string ticks >> notFollowedBy (char '`')
+    let end = string ticks *> notFollowedBy (char '`')
     (singleton . Code . T.strip . T.concat <$> (codespan `manyTill` end))
        <|> pure (str ticks)
     where codespan = backtickWord <|> nonBacktickWord <|> spaces
@@ -375,7 +375,7 @@ pLinkTitle = surroundedWith ("('\"'" :: [Char])
     where surroundedWith openers = do
               opener <- satisfy (`elem` openers)
               let ender = if opener == '(' then ')' else opener
-                  pEnder = char ender <* nfb (skip isAlphaNum)
+                  pEnder = char ender <* notFollowedBy (skip isAlphaNum)
                   regChunk = takeWhile1 ((/= ender) <&&> (/= '\\') <&&> (/= '&'))
                           <|> pEntityText <|> "&" <|> pBackslashedChar
                   nestedChunk = parenthesize <$> surroundedWith "("

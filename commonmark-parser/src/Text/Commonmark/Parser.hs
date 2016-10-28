@@ -137,11 +137,12 @@ containerContinue c = case containerType c of
     FencedCode{..} -> scanSpacesUpToColumn startColumn
     ListItem{..}   -> scanBlankline <|> (tabCrusher *> replicateM_ padding (char ' '))
     -- TODO: This is likely to be incorrect behaviour. Check.
-    Reference -> nfb (scanBlankline <|> (scanNonindentSpace *> (scanReference
-                                                            <|> scanBlockquoteStart
-                                                            <|> scanTBreakLine))
-                                    <|> (() <$ parseAtxHeadingStart))
-    _              -> pure ()
+    Reference -> notFollowedBy
+      (scanBlankline
+         <|> (do scanNonindentSpace
+                 scanReference <|> scanBlockquoteStart <|> scanTBreakLine)
+         <|> void parseAtxHeadingStart)
+    _ -> pure ()
 {-# INLINE containerContinue #-}
 
 -- Defines parsers that open new containers.
@@ -158,7 +159,7 @@ verbatimContainerStart lastLineIsText = asum
    [ scanNonindentSpace *> parseCodeFence
    , do guard (not lastLineIsText)
         scanIndentSpace
-        nfb scanBlankline
+        notFollowedBy scanBlankline
         pure IndentedCode
    , RawHtmlBlock <$> pHtmlBlockStart lastLineIsText
    , guard (not lastLineIsText) *> scanNonindentSpace *> (Reference <$ scanReference)
@@ -727,8 +728,13 @@ parseBullet = do
                           <|> ((Minus,)    <$> satisfy (== '-'))
                           <|> ((Asterisk,) <$> satisfy (== '*'))
   unless (bulletType == Plus) $
-      nfb (replicateM 2 (skipWhile ((== ' ') <||> (== '\t')) >> skip (== bulletChar)) >>
-             skipWhile (\x -> x == '\t' || x == ' ' || x == bulletChar) >> endOfInput) -- hrule
+    notFollowedBy $ do
+      -- hrule
+      replicateM_ 2 $ do
+        skipWhile ((== ' ') <||> (== '\t'))
+        skip (== bulletChar)
+      skipWhile (\x -> x == '\t' || x == ' ' || x == bulletChar)
+      endOfInput
   return $ Bullet bulletType
 
 -- Parse a list number marker and return list type.
