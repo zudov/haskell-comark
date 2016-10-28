@@ -15,9 +15,8 @@ module Text.Commonmark.Parser.Util
   , pSpaces
   , satisfyUpTo
   , lookupLinkReference
-  , scanSpacesToColumn
   , normalizeReference
-  , scanSpacesUpToColumn
+  , pSpacesUpToColumn
   ) where
 
 import           Control.Applicative
@@ -60,19 +59,13 @@ pIndentSpaces = do
     then mzero
     else pure $ T.snoc nonIndentSpaces moreSpace
     
-scanSpacesToColumn :: Int -> Scanner
-scanSpacesToColumn col = do
+pSpacesUpToColumn :: Int -> Parser Text
+pSpacesUpToColumn col = do
   currentCol <- column <$> getPosition
   let distance = col - currentCol
-  when (distance >= 1)
-    $ replicateM_ distance (char ' ')
-
-scanSpacesUpToColumn :: Int -> Scanner
-scanSpacesUpToColumn col = do
-  currentCol <- column <$> getPosition
-  let distance = col - currentCol
-  when (distance >= 1)
-    $ replicateM_ distance (discardOpt $ char ' ')
+  if distance >= 1
+    then satisfyUpTo distance (== ' ')
+    else pure ""
 
 -- Scan 0-3 spaces.
 pNonIndentSpaces :: Parser Text

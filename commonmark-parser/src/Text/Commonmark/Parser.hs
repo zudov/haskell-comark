@@ -134,7 +134,7 @@ containerContinue :: Container -> Scanner
 containerContinue c = case containerType c of
     BlockQuote     -> pNonIndentSpaces *> scanBlockquoteStart
     IndentedCode   -> void pIndentSpaces
-    FencedCode{..} -> scanSpacesUpToColumn startColumn
+    FencedCode{..} -> void (pSpacesUpToColumn startColumn)
     ListItem{..}   -> void pBlankline <|> (tabCrusher *> replicateM_ padding (char ' '))
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> notFollowedBy
