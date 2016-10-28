@@ -132,14 +132,14 @@ pptElt (L _ lf) = show lf
 -- continued on a new line (ignoring lazy continuations).
 containerContinue :: Container -> Scanner
 containerContinue c = case containerType c of
-    BlockQuote     -> scanNonindentSpace *> scanBlockquoteStart
-    IndentedCode   -> scanIndentSpace
+    BlockQuote     -> pNonIndentSpaces *> scanBlockquoteStart
+    IndentedCode   -> void pIndentSpaces
     FencedCode{..} -> scanSpacesUpToColumn startColumn
     ListItem{..}   -> scanBlankline <|> (tabCrusher *> replicateM_ padding (char ' '))
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> notFollowedBy
       (scanBlankline
-         <|> (do scanNonindentSpace
+         <|> (do pNonIndentSpaces
                  scanReference <|> scanBlockquoteStart <|> scanTBreakLine)
          <|> void parseAtxHeadingStart)
     _ -> pure ()
@@ -148,7 +148,7 @@ containerContinue c = case containerType c of
 -- Defines parsers that open new containers.
 containerStart :: Bool -> Bool -> Parser ContainerType
 containerStart afterListItem lastLineIsText = asum
-    [ scanNonindentSpace *> pure BlockQuote <* scanBlockquoteStart
+    [ pNonIndentSpaces *> pure BlockQuote <* scanBlockquoteStart
     , parseListMarker afterListItem lastLineIsText
     ]
 
@@ -156,13 +156,13 @@ containerStart afterListItem lastLineIsText = asum
 -- that take only TextLine and BlankLine as children).
 verbatimContainerStart :: Bool -> Parser ContainerType
 verbatimContainerStart lastLineIsText = asum
-   [ scanNonindentSpace *> parseCodeFence
+   [ pNonIndentSpaces *> parseCodeFence
    , do guard (not lastLineIsText)
-        scanIndentSpace
+        void pIndentSpaces
         notFollowedBy scanBlankline
         pure IndentedCode
    , RawHtmlBlock <$> pHtmlBlockStart lastLineIsText
-   , guard (not lastLineIsText) *> scanNonindentSpace *> (Reference <$ scanReference)
+   , guard (not lastLineIsText) *> pNonIndentSpaces *> (Reference <$ scanReference)
    ]
 
 -- Leaves of the container structure (they don't take children).
@@ -385,9 +385,11 @@ processLine (lineNumber, txt) = do
          -- closing code fence
          then closeContainer
          else addLeaf lineNumber (TextLine t')
-        where scanClosing = upToCountChars 3 (== ' ')
-                          >> string fence' >> skipWhile (== T.head fence')
-                                           >> scanSpaces >> endOfInput
+        where
+          scanClosing = upToCountChars 3 (== ' ')
+                     *> string fence' *> skipWhile (== T.head fence')
+                     *> pSpaces
+                     *> endOfInput
 
 
     -- otherwise, parse the remainder to see if we have new container starts:
@@ -503,7 +505,7 @@ textLineOrBlank = consolidate <$> untilTheEnd
 
 -- Parse a leaf node.
 leaf :: Bool -> Parser Leaf
-leaf lastLineIsText = scanNonindentSpace *> asum
+leaf lastLineIsText = pNonIndentSpaces *> asum
     [ ATXHeading <$> parseAtxHeadingStart <*> parseAtxHeadingContent
     , guard lastLineIsText *> parseSetextToken
     , Rule <$ scanTBreakLine
@@ -579,7 +581,7 @@ parseCodeFence = do
   col <- column <$> getPosition
   cs <- takeWhile1 (=='`') <|> takeWhile1 (=='~')
   guard $ T.length cs >= 3
-  scanSpaces
+  void pSpaces
   rawattr <- optional (takeWhile1 (\c -> c /= '`' && c /= '~'))
   endOfInput
   return FencedCode { startColumn = col
@@ -589,7 +591,7 @@ parseCodeFence = do
 
 pHtmlBlockStart :: Bool -> Parser Condition
 pHtmlBlockStart lastLineIsText = lookAhead $ do
-  discardOpt scanNonindentSpace
+  discardOpt pNonIndentSpaces
   asum starters
   where
     starters = [ condition1 <$ blockStart condition1
@@ -662,17 +664,17 @@ condition7 = Condition
       c <- satisfy (inClass "A-Za-z")
       cs <- takeWhile ((== '-') <||> inClass "A-Za-z0-9")
       guard (T.cons c cs `notElem` ["script", "style", "pre"])
-    attr = skipWhitespace *> attrName *> optional attrValueSpec
+    attr = pWhitespace *> attrName *> optional attrValueSpec
     attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
-    attrValueSpec = optional skipWhitespace *> char '=' *>
-                    optional skipWhitespace *> attrValue
+    attrValueSpec = optional pWhitespace *> char '=' *>
+                    optional pWhitespace *> attrValue
     attrValue = void unquoted <|> void singleQuoted <|> void doubleQuoted
     unquoted = skipWhile1 (notInClass " \"'=<>`")
     singleQuoted = "'" *> skipWhile (/= '\'') *> "'"
     doubleQuoted = "\"" *> skipWhile (/= '"') *> "\""
-    openTag = "<" *> tagName *> many attr *> optional skipWhitespace
+    openTag = "<" *> tagName *> many attr *> optional pWhitespace
                                           *> optional "/" *> ">"
-    closeTag = "</" *> tagName *> optional skipWhitespace *> ">"
+    closeTag = "</" *> tagName *> optional pWhitespace *> ">"
 
 -- List of block level tags for HTML 5.
 isBlockHtmlTag :: Text -> Bool
@@ -696,15 +698,15 @@ isBlockHtmlTag name = T.toLower name `Set.member` Set.fromList
 parseListMarker :: Bool -> Bool -> Parser ContainerType
 parseListMarker afterListItem lastLineIsText = do
   tabCrusher
-  markerPadding <- if afterListItem then countSpaces else countNonindentSpace
+  markerPadding <- T.length <$> if afterListItem then pSpaces else pNonIndentSpaces
   ty <- parseBullet <|> parseListNumber lastLineIsText
   -- padding is 1 if list marker followed by a blank line
   -- or indented code.  otherwise it's the length of the
   -- whitespace between the list marker and the following text:
   tabCrusher
   contentPadding <- (1 <$ scanBlankline)
-                <|> (1 <$ (skip (==' ') *> lookAhead scanIndentSpace))
-                <|> countSpaces
+                <|> (1 <$ (skip (==' ') *> lookAhead pIndentSpaces))
+                <|> (T.length <$> pSpaces)
   -- text can't immediately follow the list marker:
   guard $ contentPadding > 0
   -- an empty list item cannot interrupt a paragraph

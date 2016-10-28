@@ -123,19 +123,19 @@ pHtml = singleton . RawHtml <$> consumedBy (asum scanners)
                , void instruct, void declar, void cdata
                ]
     tagName = satisfy (inClass "A-Za-z") *> skipWhile ((== '-') <||> (inClass "A-Za-z0-9"))
-    attr = skipWhitespace *> attrName *> optional attrValueSpec
+    attr = pWhitespace *> attrName *> optional attrValueSpec
     attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
-    attrValueSpec = optional skipWhitespace *> char '=' *>
-                    optional skipWhitespace *> attrValue
+    attrValueSpec = optional pWhitespace *> char '=' *>
+                    optional pWhitespace *> attrValue
     attrValue = void unquoted <|> void singleQuoted <|> void doubleQuoted
     unquoted = skipWhile1 (notInClass " \"'=<>`")
     singleQuoted = "'" *> skipWhile (/= '\'') *> "'"
     doubleQuoted = "\"" *> skipWhile (/= '"') *> "\""
-    openTag = "<" *> tagName *> many attr *> optional skipWhitespace
+    openTag = "<" *> tagName *> many attr *> optional pWhitespace
                                           *> optional "/" *> ">"
-    closeTag = "</" *> tagName *> optional skipWhitespace *> ">"
+    closeTag = "</" *> tagName *> optional pWhitespace *> ">"
     instruct = "<?" <* manyTill anyChar "?>"
-    declar = "<!" *> skipWhile1 isAsciiUpper *> skipWhitespace
+    declar = "<!" *> skipWhile1 isAsciiUpper *> pWhitespace
                   *> skipWhile (/= '>') *> char '>'
     cdata = "<![CDATA[" <* manyTill anyChar "]]>"
     comment = do
@@ -292,9 +292,9 @@ pEmphLink opts = do
                 fallback = pure (addInlines pre (unToken opener) >< addInline post closer)
         handle (_, _) = mzero <?> "IMPOSSIBLE HAPPENED: expected LinkOpener"
     pInlineLink constr content = do
-      char '(' *> optional skipWhitespace
+      char '(' *> optional pWhitespace
       dest <- option "" pLinkDest
-      title <- optional (skipWhitespace *> pLinkTitle <* optional skipWhitespace)
+      title <- optional (pWhitespace *> pLinkTitle <* optional pWhitespace)
       char ')'
       pure $ singleton $ constr content dest title
     pReferenceLink constr content lbl = do
@@ -386,12 +386,19 @@ pReference = do
     lab <- pLinkLabel <* char ':'
     guard $ isJust $ T.find (not . isWhitespace) lab
     scanWhitespaceNL
-    url <- pLinkDest <* skipWhitespaceNoNL
+    url <- pLinkDest <* skipWhile whitespaceNoNL
     titleOnNewLine <- isJust <$> optional pLineEnding
-    skipWhitespaceNoNL
+    skipWhile whitespaceNoNL
     title <- if titleOnNewLine
-             then optional (pLinkTitle <* skipWhitespaceNoNL
+             then optional (pLinkTitle <* skipWhile whitespaceNoNL
                                        <* (endOfInput <|> void pLineEnding))
-             else optional pLinkTitle <* skipWhitespaceNoNL
+             else optional pLinkTitle <* skipWhile whitespaceNoNL
                                       <* (endOfInput <|> void pLineEnding)
     return (lab, url, title)
+  where
+    -- | optional scanWhitespace (including up to one line ending)
+    scanWhitespaceNL = skipWhile whitespaceNoNL
+                    *> optional pLineEnding
+                    *> skipWhile whitespaceNoNL
+    whitespaceNoNL = isWhitespace <&&> not . isLineEnding
+

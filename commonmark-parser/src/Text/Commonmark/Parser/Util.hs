@@ -1,27 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 module Text.Commonmark.Parser.Util
   ( pLineEnding
   , isLineEnding
-  , skipWhitespaceNoNL
-  , scanWhitespaceNL
   , isWhitespace
   , parenthesize
-  , skipWhitespace
+  , pNonIndentSpaces
   , isUnicodeWhitespace
   , isAsciiPunctuation
   , Scanner ()
-  , countSpaces
-  , scanIndentSpace
+  , pIndentSpaces
   , scanBlankline
   , pWhitespace
-  , scanSpaces
-  , scanNonindentSpace
+  , pSpaces
   , upToCountChars
   , lookupLinkReference
   , scanSpacesToColumn
   , normalizeReference
   , scanSpacesUpToColumn
-  , countNonindentSpace
   ) where
 
 import           Control.Applicative
@@ -54,14 +50,16 @@ isLineEnding = (== '\r') <||> (== '\n')
 isAsciiPunctuation :: Char -> Bool
 isAsciiPunctuation = inClass "!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-"
 
--- Scan tab or four spaces.
-scanIndentSpace :: Scanner
-scanIndentSpace = do
-  spaceCount <- countNonindentSpace
-  moreSpaceCount <- 4 <$ char '\t'
-                <|> 1 <$ char ' '
-  when (spaceCount + moreSpaceCount < 4) mzero
-
+pIndentSpaces :: Parser Text
+pIndentSpaces = do
+  nonIndentSpaces <- pNonIndentSpaces
+  let count0 = T.length nonIndentSpaces
+  (count1, moreSpace) <- ((4,) <$> char '\t')
+                     <|> ((1,) <$> char ' ')
+  if count0 + count1 < 4
+    then mzero
+    else pure $ T.snoc nonIndentSpaces moreSpace
+    
 scanSpacesToColumn :: Int -> Scanner
 scanSpacesToColumn col = do
   currentCol <- column <$> getPosition
@@ -77,11 +75,8 @@ scanSpacesUpToColumn col = do
     $ replicateM_ distance (discardOpt $ char ' ')
 
 -- Scan 0-3 spaces.
-scanNonindentSpace :: Scanner
-scanNonindentSpace = () <$ upToCountChars 3 (==' ')
-
-countNonindentSpace :: Parser Int
-countNonindentSpace = T.length <$> upToCountChars 3 (== ' ')
+pNonIndentSpaces :: Parser Text
+pNonIndentSpaces = upToCountChars 3 (== ' ')
 
 upToCountChars :: Int -> (Char -> Bool) -> Parser Text
 upToCountChars cnt f =
@@ -90,14 +85,10 @@ upToCountChars cnt f =
 
 -- Scan a blankline.
 scanBlankline :: Scanner
-scanBlankline = scanSpaces *> endOfInput
+scanBlankline = pSpaces *> endOfInput
 
--- Scan 0 or more spaces
-scanSpaces :: Scanner
-scanSpaces = skipWhile (==' ')
-
-countSpaces :: Parser Int
-countSpaces = T.length <$> takeWhile (== ' ')
+pSpaces :: Parser Text
+pSpaces = takeWhile (== ' ')
 
 -- | A [whitespace character] as in spec
 isWhitespace :: Char -> Bool
@@ -106,26 +97,6 @@ isWhitespace = (`elem` (" \t\n\r\f\v" :: [Char]))
 -- | [whitespace] as in spec
 pWhitespace :: Parser Text
 pWhitespace = takeWhile1 isWhitespace
-
-skipWhitespace :: Scanner
-skipWhitespace = skipWhile1 isWhitespace
-
--- | optional scanWhitespace (including up to one line ending)
-scanWhitespaceNL :: Scanner
-scanWhitespaceNL = do
- discardOpt scanWhitespaceNoNL
- discardOpt pLineEnding
- discardOpt scanWhitespaceNoNL
-
-scanWhitespaceNoNL :: Scanner
-scanWhitespaceNoNL =
-  skipWhile1
-    (isWhitespace <&&> not . isLineEnding)
-
-skipWhitespaceNoNL :: Scanner
-skipWhitespaceNoNL =
-  skipWhile
-    (isWhitespace <&&> not . isLineEnding)
 
 -- | [unicode whitespace] as in spec
 isUnicodeWhitespace :: Char -> Bool
