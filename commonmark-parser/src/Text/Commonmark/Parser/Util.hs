@@ -10,7 +10,7 @@ module Text.Commonmark.Parser.Util
   , isAsciiPunctuation
   , Scanner ()
   , pIndentSpaces
-  , scanBlankline
+  , pBlankline
   , pWhitespace
   , pSpaces
   , upToCountChars
@@ -83,9 +83,8 @@ upToCountChars cnt f =
   scan 0 $ \n c ->
     n + 1 <$ guard (n < cnt && f c)
 
--- Scan a blankline.
-scanBlankline :: Scanner
-scanBlankline = pSpaces *> endOfInput
+pBlankline :: Parser Text
+pBlankline = pSpaces <* endOfInput
 
 pSpaces :: Parser Text
 pSpaces = takeWhile (== ' ')

@@ -135,10 +135,10 @@ containerContinue c = case containerType c of
     BlockQuote     -> pNonIndentSpaces *> scanBlockquoteStart
     IndentedCode   -> void pIndentSpaces
     FencedCode{..} -> scanSpacesUpToColumn startColumn
-    ListItem{..}   -> scanBlankline <|> (tabCrusher *> replicateM_ padding (char ' '))
+    ListItem{..}   -> void pBlankline <|> (tabCrusher *> replicateM_ padding (char ' '))
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> notFollowedBy
-      (scanBlankline
+      (void pBlankline
          <|> (do pNonIndentSpaces
                  scanReference <|> scanBlockquoteStart <|> scanTBreakLine)
          <|> void parseAtxHeadingStart)
@@ -159,7 +159,7 @@ verbatimContainerStart lastLineIsText = asum
    [ pNonIndentSpaces *> parseCodeFence
    , do guard (not lastLineIsText)
         void pIndentSpaces
-        notFollowedBy scanBlankline
+        notFollowedBy pBlankline
         pure IndentedCode
    , RawHtmlBlock <$> pHtmlBlockStart lastLineIsText
    , guard (not lastLineIsText) *> pNonIndentSpaces *> (Reference <$ scanReference)
@@ -561,7 +561,7 @@ parseSetextToken :: Parser Leaf
 parseSetextToken = fmap (uncurry SetextToken) $ withConsumed $ do
   d <- satisfy (\c -> c == '-' || c == '=')
   skipWhile (== d)
-  scanBlankline
+  void pBlankline
   return $ if d == '=' then Heading1 else Heading2
 
 -- Scan a horizontal rule line: "...three or more hyphens, asterisks,
@@ -652,12 +652,12 @@ condition6 = Condition
       tag <- takeTill (isWhitespace <||> (== '/') <||> (== '>'))
       guard $ isBlockHtmlTag (T.toLower tag)
       void pWhitespace <|> void pLineEnding <|> void ">" <|> void "/>"
-  , blockEnd = scanBlankline
+  , blockEnd = void pBlankline
   }
 
 condition7 = Condition
   { blockStart = (openTag <|> closeTag) *> (void pWhitespace <|> endOfInput)
-  , blockEnd = scanBlankline
+  , blockEnd = void pBlankline
   }
   where
     tagName = do
@@ -704,7 +704,7 @@ parseListMarker afterListItem lastLineIsText = do
   -- or indented code.  otherwise it's the length of the
   -- whitespace between the list marker and the following text:
   tabCrusher
-  contentPadding <- (1 <$ scanBlankline)
+  contentPadding <- (1 <$ pBlankline)
                 <|> (1 <$ (skip (==' ') *> lookAhead pIndentSpaces))
                 <|> (T.length <$> pSpaces)
   -- text can't immediately follow the list marker:
