@@ -386,7 +386,7 @@ processLine (lineNumber, txt) = do
          then closeContainer
          else addLeaf lineNumber (TextLine t')
         where scanClosing = upToCountChars 3 (== ' ')
-                          >> string fence' >> scanChars (T.head fence')
+                          >> string fence' >> skipWhile (== T.head fence')
                                            >> scanSpaces >> endOfInput
 
 
@@ -518,7 +518,7 @@ scanReference = void $ lookAhead (char '[')
 -- Scan the beginning of a blockquote:  up to three spaces
 -- indent (outside of this scanner), the `>` character, and an optional space.
 scanBlockquoteStart :: Scanner
-scanBlockquoteStart = scanChar '>' *> tabCrusher *> discardOpt (scanChar ' ')
+scanBlockquoteStart = char '>' *> tabCrusher *> discardOpt (char ' ')
 
 -- Parse the sequence of `#` characters that begins an ATX
 -- header, and return the number of characters.  We require
@@ -724,9 +724,9 @@ listMarkerWidth (Ordered _ n)
 -- Parse a bullet and return list type.
 parseBullet :: Parser ListType
 parseBullet = do
-  (bulletType, bulletChar) <- ((Plus,)     <$> satisfy (== '+'))
-                          <|> ((Minus,)    <$> satisfy (== '-'))
-                          <|> ((Asterisk,) <$> satisfy (== '*'))
+  (bulletType, bulletChar) <- ((Plus,)     <$> char '+')
+                          <|> ((Minus,)    <$> char '-')
+                          <|> ((Asterisk,) <$> char '*')
   unless (bulletType == Plus) $
     notFollowedBy $ do
       -- hrule
@@ -744,5 +744,5 @@ parseListNumber lastLineIsText = do
     when lastLineIsText $
       guard $ num == 1
     guard $ num < (10 ^ (9 :: Integer))
-    wrap <- asum [Period <$ scanChar '.', Paren <$ scanChar ')']
+    wrap <- asum [Period <$ char '.', Paren <$ char ')']
     return $ Ordered wrap (fromInteger num)

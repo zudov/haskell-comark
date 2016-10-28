@@ -10,7 +10,6 @@ module Text.Commonmark.Parser.Util
   , isUnicodeWhitespace
   , isAsciiPunctuation
   , Scanner ()
-  , scanChar
   , countSpaces
   , scanIndentSpace
   , scanBlankline
@@ -22,7 +21,6 @@ module Text.Commonmark.Parser.Util
   , scanSpacesToColumn
   , normalizeReference
   , scanSpacesUpToColumn
-  , scanChars
   , countNonindentSpace
   ) where
 
@@ -56,14 +54,6 @@ isLineEnding = (== '\r') <||> (== '\n')
 isAsciiPunctuation :: Char -> Bool
 isAsciiPunctuation = inClass "!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-"
 
--- Scan a specified character.
-scanChar :: Char -> Scanner
-scanChar = skip . (==)
-
--- Scan a specified character.
-scanChars :: Char -> Scanner
-scanChars = skipMany . scanChar
-
 -- Scan tab or four spaces.
 scanIndentSpace :: Scanner
 scanIndentSpace = do
@@ -77,14 +67,14 @@ scanSpacesToColumn col = do
   currentCol <- column <$> getPosition
   let distance = col - currentCol
   when (distance >= 1)
-    $ replicateM_ distance (scanChar ' ')
+    $ replicateM_ distance (char ' ')
 
 scanSpacesUpToColumn :: Int -> Scanner
 scanSpacesUpToColumn col = do
   currentCol <- column <$> getPosition
   let distance = col - currentCol
   when (distance >= 1)
-    $ replicateM_ distance (discardOpt $ scanChar ' ')
+    $ replicateM_ distance (discardOpt $ char ' ')
 
 -- Scan 0-3 spaces.
 scanNonindentSpace :: Scanner
