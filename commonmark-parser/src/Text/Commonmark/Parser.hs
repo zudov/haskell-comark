@@ -386,7 +386,7 @@ processLine (lineNumber, txt) = do
          then closeContainer
          else addLeaf lineNumber (TextLine t')
         where
-          scanClosing = upToCountChars 3 (== ' ')
+          scanClosing = satisfyUpTo 3 (== ' ')
                      *> string fence' *> skipWhile (== T.head fence')
                      *> pSpaces
                      *> endOfInput
@@ -533,7 +533,7 @@ scanBlockquoteStart = char '>' *> tabCrusher *> discardOpt (char ' ')
 parseAtxHeadingStart :: Parser HeadingLevel
 parseAtxHeadingStart = do
   _ <- char '#'
-  hashes <- upToCountChars 5 (== '#')
+  hashes <- satisfyUpTo 5 (== '#')
   -- hashes must be followed by space unless empty header:
   notFollowedBy (skip ((/= ' ') <&&> (/= '\t')))
   pure $ case (T.length hashes + 1) of

@@ -13,7 +13,7 @@ module Text.Commonmark.Parser.Util
   , pBlankline
   , pWhitespace
   , pSpaces
-  , upToCountChars
+  , satisfyUpTo
   , lookupLinkReference
   , scanSpacesToColumn
   , normalizeReference
@@ -76,10 +76,10 @@ scanSpacesUpToColumn col = do
 
 -- Scan 0-3 spaces.
 pNonIndentSpaces :: Parser Text
-pNonIndentSpaces = upToCountChars 3 (== ' ')
+pNonIndentSpaces = satisfyUpTo 3 (== ' ')
 
-upToCountChars :: Int -> (Char -> Bool) -> Parser Text
-upToCountChars cnt f =
+satisfyUpTo :: Int -> (Char -> Bool) -> Parser Text
+satisfyUpTo cnt f =
   scan 0 $ \n c ->
     n + 1 <$ guard (n < cnt && f c)
 
