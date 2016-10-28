@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Text.Commonmark.Parser.Util
-  ( lineEnding
+  ( pLineEnding
+  , isLineEnding
   , skipWhitespaceNoNL
   , scanWhitespaceNL
   , isWhitespace
@@ -40,9 +41,17 @@ import           Text.Commonmark.Types
 
 type Scanner = Parser ()
 
--- | A newline (U+000A), carriage return (U+000D), or carriage return + newline.
-lineEnding :: Scanner
-lineEnding = void ("\n" <|> "\r\n" <|> "\r")
+-- | A newline (U+000A), carriage return (U+000D), or carriage return followed by newline.
+pLineEnding :: Parser Text
+pLineEnding = "\n" <|> "\r\n" <|> "\r"
+
+-- | Predicate for line ending character (newline or carriage return).
+--   NB: something like `satisfy isLineEnding` won't properly parse a
+--   line ending, when given '\r\n' as input it would just consume '\r'
+--   leaving '\n' unconsumed. In such cases one should use 'pLineEnding'
+--   instead
+isLineEnding :: Char -> Bool
+isLineEnding = (== '\r') <||> (== '\n')
 
 isAsciiPunctuation :: Char -> Bool
 isAsciiPunctuation = inClass "!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-"
@@ -115,18 +124,18 @@ skipWhitespace = skipWhile1 isWhitespace
 scanWhitespaceNL :: Scanner
 scanWhitespaceNL = do
  discardOpt scanWhitespaceNoNL
- discardOpt lineEnding
+ discardOpt pLineEnding
  discardOpt scanWhitespaceNoNL
 
 scanWhitespaceNoNL :: Scanner
 scanWhitespaceNoNL =
   skipWhile1
-    (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
+    (isWhitespace <&&> not . isLineEnding)
 
 skipWhitespaceNoNL :: Scanner
 skipWhitespaceNoNL =
   skipWhile
-    (isWhitespace <&&> (`notElem` ("\r\n" :: [Char])))
+    (isWhitespace <&&> not . isLineEnding)
 
 -- | [unicode whitespace] as in spec
 isUnicodeWhitespace :: Char -> Bool

@@ -93,11 +93,11 @@ pBackslashed = str <$> pBackslashedChar
 
 pHardbreak :: Parser (Inlines Text)
 pHardbreak = singleton HardBreak <$ asum
-    [ char '\\' *> lineEnding *> skipWhile (== ' ')
-    , "  " *> skipWhile (== ' ') *> lineEnding *> skipWhile (== ' ')]
+    [ char '\\' *> pLineEnding *> skipWhile (== ' ')
+    , "  " *> skipWhile (== ' ') *> pLineEnding *> skipWhile (== ' ')]
 
 pSoftbreak :: Parser (Inlines Text)
-pSoftbreak = discardOpt (char ' ') *> lineEnding
+pSoftbreak = discardOpt (char ' ') *> pLineEnding
                                    *> pure (singleton SoftBreak)
                                    <* skipWhile (== ' ')
 
@@ -113,7 +113,7 @@ pCode = do
           backtickWord = takeWhile1 (== '`')
           nonBacktickWord = takeWhile1 ((/= '`') <&&> (not . collapsableSpace))
           spaces = " " <$ takeWhile1 collapsableSpace
-          collapsableSpace = (== ' ') <||> (== '\r') <||> (== '\n')
+          collapsableSpace = (== ' ') <||> isLineEnding
 
 -- [ Raw Html ] ----------------------------------------------------------------
 pHtml :: Parser (Inlines Text)
@@ -387,11 +387,11 @@ pReference = do
     guard $ isJust $ T.find (not . isWhitespace) lab
     scanWhitespaceNL
     url <- pLinkDest <* skipWhitespaceNoNL
-    titleOnNewLine <- isJust <$> optional lineEnding
+    titleOnNewLine <- isJust <$> optional pLineEnding
     skipWhitespaceNoNL
     title <- if titleOnNewLine
              then optional (pLinkTitle <* skipWhitespaceNoNL
-                                       <* (endOfInput <|> lineEnding))
+                                       <* (endOfInput <|> void pLineEnding))
              else optional pLinkTitle <* skipWhitespaceNoNL
-                                      <* (endOfInput <|> lineEnding)
+                                      <* (endOfInput <|> void pLineEnding)
     return (lab, url, title)

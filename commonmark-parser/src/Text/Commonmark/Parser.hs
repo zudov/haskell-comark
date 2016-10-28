@@ -613,14 +613,14 @@ instance Eq Condition where
 
 lineContains :: Foldable t => t Text -> Parser ()
 lineContains terms = do
-  line <- T.toCaseFold <$> takeTill ((== '\r') <||> (== '\n'))
+  line <- T.toCaseFold <$> takeTill isLineEnding
   guard $ any (`T.isInfixOf` line) terms
 
 condition1, condition2, condition3, condition4, condition5, condition6, condition7 :: Condition
 condition1 = Condition
   { blockStart = do
       _ <- asum $ map stringCaseless ["<script", "<pre", "<style"]
-      void pWhitespace <|> void ">" <|> lineEnding <|> endOfInput
+      void pWhitespace <|> void ">" <|> void pLineEnding <|> endOfInput
   , blockEnd = lineContains ["</script>", "</pre>", "</style>"]
   }
 
@@ -647,9 +647,9 @@ condition5 = Condition
 condition6 = Condition
   { blockStart = do
       void $ "</" <|> "<"
-      tag <- takeTill (isWhitespace <||> (== '\n') <||> (== '\r') <||> (== '/') <||> (== '>'))
+      tag <- takeTill (isWhitespace <||> (== '/') <||> (== '>'))
       guard $ isBlockHtmlTag (T.toLower tag)
-      void pWhitespace <|> lineEnding <|> void ">" <|> void "/>"
+      void pWhitespace <|> void pLineEnding <|> void ">" <|> void "/>"
   , blockEnd = scanBlankline
   }
 
