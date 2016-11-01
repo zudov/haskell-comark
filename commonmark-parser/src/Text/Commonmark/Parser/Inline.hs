@@ -23,7 +23,7 @@ import           Data.Monoid
 import           Data.Sequence                     (Seq, ViewL (..), ViewR (..),
                                                     singleton, viewl, viewr,
                                                     (<|), (><), (|>))
-import qualified Data.Sequence                     as Seq
+import qualified Data.Sequence.Extended            as Seq
 import           Data.Text                         (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
@@ -198,6 +198,8 @@ data Token = InlineToken (Inlines Text)
                            }
            deriving (Show, Eq)
 
+type DelimStack = Seq Token
+
 data EmphIndicator = AsteriskIndicator | UnderscoreIndicator deriving (Show, Eq)
 data OpenerType    = LinkOpener        | ImageOpener         deriving (Show, Eq)
 
@@ -278,30 +280,26 @@ pEmphTokens opts =
 
     lookForLinkOrImage :: Seq Token -> Parser (Seq Token)
     lookForLinkOrImage ds =
-      maybe (pure $ addInline afterLink closer) pOpenedLink mLinkOpener
-      where
-        (beforeLink, mLinkOpener, afterLink) =
-           case Seq.breakr isLinkOpener ds of
-             (after, before) ->
-               case viewr before of
-                 EmptyR -> (before, Nothing, after)
-                 pre :> opener -> (pre, Just opener, after)
-        closer = Str "]"
-        pOpenedLink opener = option fallback $ do
-          guard (active opener)
-          addInlines (deactivating beforeLink) <$> pLink
+      case Seq.findr isLinkOpener ds of
+        Nothing -> pure (addInline ds closer)
+        Just (suffix, opener, prefix) ->
+          option fallback $ do
+            guard (active opener)
+            addInlines (deactivating prefix) <$> pLink
           where
-            fallback = addInlines beforeLink (unToken opener)
-                         <> addInline afterLink closer
+            fallback = addInlines prefix (unToken opener)
+                         <> addInline suffix closer
             constr = case openerType opener of
                        LinkOpener  -> Link
                        ImageOpener -> Image
             deactivating = case openerType opener of
                              LinkOpener -> fmap deactivate
                              ImageOpener -> id
-            linkContent = foldMap unToken $ processEmphTokens (InlineToken (content opener) <| afterLink)
+            linkContent = foldMap unToken $ processEmphTokens (InlineToken (content opener) <| suffix)
             pLink = pInlineLink constr linkContent
                 <|> pReferenceLink constr linkContent (refLabel opener)
+      where
+        closer = Str "]"
 
     pInlineLink constr content = do
       char '(' *> optional pWhitespace
@@ -326,21 +324,22 @@ processEmphToken :: Token -> Seq Token -> Seq Token
 processEmphToken closing@EmphDelimToken{} stack
   | dCanOpen closing && not (dCanClose closing) = closing <| stack
   | dCanClose closing =
-      case Seq.breakl (matchOpening (dChar closing)) stack of
-          (_, viewl -> EmptyL)
-            | dCanOpen closing -> closing <| stack
-            | otherwise -> (InlineToken $ unToken closing) <| stack
-          (viewl -> EmptyL, _) -> stack
-          (content, (viewl -> opening :< rest))
-            | dCanOpen closing && ((dLength opening + dLength closing) `mod` 3) == 0 ->
-                closing <| stack
-            | otherwise ->
-                matchEmphStrings rest opening closing
-                                 (foldMap unToken $ Seq.reverse content)
-          (_, _) -> closing <| stack -- XXX: when would that actually happen?
+      case Seq.findl (matchOpening (dChar closing)) stack of
+        Nothing
+          | dCanOpen closing -> closing <| stack
+          | otherwise -> (InlineToken $ unToken closing) <| stack
+        Just (viewl -> EmptyL, _, _) -> stack
+        Just (content, opening, rest)
+          | dCanOpen closing && ((dLength opening + dLength closing) `mod` 3) == 0 ->
+              closing <| stack
+          | otherwise ->
+              matchEmphStrings rest opening closing
+                (foldMap unToken $ Seq.reverse content)
   | otherwise = InlineToken (unToken closing) <| stack
-  where matchOpening ch d@EmphDelimToken{} = dChar d == ch && dCanOpen d
-        matchOpening _ _ = False
+  where
+    matchOpening ch d@EmphDelimToken{} = dChar d == ch && dCanOpen d
+    matchOpening _ _ = False
+
 processEmphToken inline@InlineToken{} stack = inline <| stack
 processEmphToken lo@LinkOpenToken{} stack = processEmphToken (InlineToken (unToken lo)) stack
 

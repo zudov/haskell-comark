@@ -23,6 +23,7 @@ library
       Text.Commonmark.Parser
       Text.Commonmark.Parser.Options
   other-modules:
+      Data.Sequence.Extended
       Text.Commonmark.Parser.Inline
       Text.Commonmark.Parser.Util
       Text.Commonmark.ParserCombinators
