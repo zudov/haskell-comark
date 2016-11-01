@@ -180,7 +180,7 @@ pScheme = do
   as <- takeWhile1 ((isAscii <&&> (isLetter <||> isDigit)) <||> (== '+') <||> (== '.') <||> (== '-'))
   mfilter ((<= 32) . T.length) $ pure $ T.cons a as
 
--- [ Links and Images ] --------------------------------------------------------
+-- [ Emphasis, Links, and Images ] ---------------------------------------------
 
 data Token = InlineToken (Inlines Text)
            | EmphDelimToken { dChar     :: EmphIndicator
@@ -256,16 +256,18 @@ pLinkOpener = do
 pEmphLinkDelim :: Parser Token
 pEmphLinkDelim = pEmphDelimToken '*' <|> pEmphDelimToken '_' <|> pLinkOpener
 
-pEmphLink :: ParserOptions -> Parser (Inlines Text)
-pEmphLink opts = do
-  d <- pEmphLinkDelim
-  foldMap unToken . processEmphTokens <$> go (Seq.singleton d)
+pEmphTokens :: ParserOptions -> Parser (Seq Token)
+pEmphTokens opts =
+    go . Seq.singleton =<< pEmphLinkDelim
   where
-    go delimStack =
-        ((char ']' >> lookForLinkOrImage delimStack >>= go)
-        <|> (delimStack <$ endOfInput)
-        <|> (go . (delimStack |>) =<< pEmphLinkDelim)
-        <|> (go . (addInlines delimStack) =<< (asum inline)))
+    go :: Seq Token -> Parser (Seq Token)
+    go delimStack = asum
+      [ delimStack <$ endOfInput
+      , char ']' *> (go =<< lookForLinkOrImage delimStack)
+      , go . (delimStack |>) =<< pEmphLinkDelim
+      , go . addInlines delimStack =<< asum inline
+      ]
+
     inline = [ pCode, pAutolink, pHtml, pText, pHardbreak, pSoftbreak
              , pBackslashed, pEntity, pFallback ]
 
@@ -301,6 +303,10 @@ pEmphLink opts = do
       ref <- (Just <$> pLinkLabel) <|> (lbl <$ optional "[]")
       maybe mzero (pure . singleton . uncurry (constr content))
                   (poLinkReferences opts =<< ref)
+
+pEmphLink :: ParserOptions -> Parser (Inlines Text)
+pEmphLink opts =
+  foldMap unToken . processEmphTokens <$> pEmphTokens opts
 
 processEmphTokens :: Seq Token -> Seq Token
 processEmphTokens = Seq.reverse . foldl (flip processEmphToken) Seq.empty
