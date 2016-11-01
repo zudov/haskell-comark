@@ -5,9 +5,10 @@ module Text.Commonmark.Parser.Options
     , defParserOptions
     , poNormalize
     , poLinkReferences
+    , poParseEmphasis
     ) where
 
-import           Data.Monoid (Endo(Endo, appEndo), mappend)
+import           Data.Monoid (Endo(Endo, appEndo))
 import           Data.Text   (Text)
 
 data ParserOption
@@ -33,6 +34,7 @@ data ParserOption
 data ParserOptions = ParserOptions
     { poNormalize      :: Bool
     , poLinkReferences :: Text -> Maybe (Text, Maybe Text)
+    , poParseEmphasis  :: Bool
     }
 
 parserOptions :: [ParserOption] -> ParserOptions
@@ -46,4 +48,5 @@ defParserOptions :: ParserOptions
 defParserOptions = ParserOptions
   { poNormalize      = False
   , poLinkReferences = const Nothing
+  , poParseEmphasis  = True
   }

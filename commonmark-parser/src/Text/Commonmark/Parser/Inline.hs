@@ -28,7 +28,6 @@ import           Data.Text                         (Text)
 import qualified Data.Text                         as T
 import qualified Data.Text.Lazy                    as TL
 import qualified Data.Text.Lazy.Builder            as TB
-import           Data.Tuple
 
 import           Text.Commonmark.Parser.Options
 import           Text.Commonmark.Parser.Util
@@ -56,7 +55,9 @@ pInline :: ParserOptions -> Parser (Inlines Text)
 pInline opts =  pText
             <|> pHardbreak
             <|> pSoftbreak
-            <|> pEmphLink opts
+            <|> (if poParseEmphasis opts
+                   then pEmphLink opts
+                   else mzero)
             <|> pBackslashed
             <|> pAutolink
             <|> pHtml
@@ -198,8 +199,6 @@ data Token = InlineToken (Inlines Text)
                            }
            deriving (Show, Eq)
 
-type DelimStack = Seq Token
-
 data EmphIndicator = AsteriskIndicator | UnderscoreIndicator deriving (Show, Eq)
 data OpenerType    = LinkOpener        | ImageOpener         deriving (Show, Eq)
 
@@ -272,11 +271,9 @@ pEmphTokens opts =
         step = asum
           [ char ']' *> lookForLinkOrImage ds
           , pEmphLinkDelim <&> (ds |>)
-          , asum inline <&> addInlines ds
+          , pInline opts { poParseEmphasis = False }
+              <&> addInlines ds
           ]
-
-    inline = [ pCode, pAutolink, pHtml, pText, pHardbreak, pSoftbreak
-             , pBackslashed, pEntity, pFallback ]
 
     lookForLinkOrImage :: Seq Token -> Parser (Seq Token)
     lookForLinkOrImage ds =
