@@ -55,9 +55,7 @@ pInline :: ParserOptions -> Parser (Inlines Text)
 pInline opts =  pText
             <|> pHardbreak
             <|> pSoftbreak
-            <|> (if poParseEmphasis opts
-                   then pEmphLink opts
-                   else mzero)
+            <|> guard (poParseEmphasis opts) *> pEmphLink opts
             <|> pBackslashed
             <|> pAutolink
             <|> pHtml
@@ -158,7 +156,7 @@ pEntity = str <$> pEntityText
 pEntityText :: Parser Text
 pEntityText = char '&' *> ((char '#' *> (decEntity <|> hexEntity)) <|> namedEntity) <* char ';'
     where namedEntity, decEntity, hexEntity :: Parser Text
-          namedEntity = (maybe (mzero <?> "not a named entity") return
+          namedEntity = (maybe (mzero <?> "not a named entity") pure
                       . entityNameChars) =<< takeWhile1 (/= ';')
           decEntity = T.singleton . chrSafe <$> decimal
           hexEntity = (char 'x' <|> char 'X') *> (T.singleton . chrSafe <$> hexadecimal)
@@ -172,11 +170,11 @@ pAutolink = char '<' *> (pUrl <|> pEmail) <* char '>'
               chars <- takeTill ((isAscii <&&> (isWhitespace <||> isControl))
                                     <||> (== '>') <||> (== '<'))
               let uri = scheme <> ":" <> chars
-              return $ singleton $ Link (str uri) uri Nothing
+              pure $ singleton $ Link (str uri) uri Nothing
           pEmail = do
               email <- isValidEmail `mfilter` takeWhile1 (/= '>')
-              return $ singleton $ Link (str email)
-                                        ("mailto:" <> email) Nothing
+              pure $ singleton $
+                Link (str email) ("mailto:" <> email) Nothing
 
 pScheme :: Parser Text
 pScheme = do
@@ -186,21 +184,35 @@ pScheme = do
 
 -- [ Emphasis, Links, and Images ] ---------------------------------------------
 
-data Token = InlineToken (Inlines Text)
-           | EmphDelimToken { dChar     :: EmphIndicator
-                            , dLength   :: Int
-                            , dCanOpen  :: Bool
-                            , dCanClose :: Bool
-                            }
-           | LinkOpenToken { openerType :: OpenerType
-                           , active     :: Bool
-                           , refLabel   :: Maybe Text
-                           , content    :: Inlines Text
-                           }
-           deriving (Show, Eq)
+data Token
+  = InlineToken (Inlines Text)
+  | EmphDelimToken
+      { dChar     :: EmphIndicator
+      , dLength   :: Int
+      , dCanOpen  :: Bool
+      , dCanClose :: Bool
+      }
+  | LinkOpenToken
+      { openerType :: OpenerType
+      , active     :: Bool
+      , refLabel   :: Maybe Text
+      , content    :: Inlines Text
+      }
+  deriving (Show, Eq)
 
-data EmphIndicator = AsteriskIndicator | UnderscoreIndicator deriving (Show, Eq)
-data OpenerType    = LinkOpener        | ImageOpener         deriving (Show, Eq)
+data EmphIndicator
+  = AsteriskIndicator
+  | UnderscoreIndicator
+  deriving (Show, Eq)
+
+indicatorChar :: EmphIndicator -> Char
+indicatorChar AsteriskIndicator = '*'
+indicatorChar UnderscoreIndicator = '_'
+
+data OpenerType
+  = LinkOpener
+  | ImageOpener
+  deriving (Show, Eq)
 
 isLinkOpener :: Token -> Bool
 isLinkOpener LinkOpenToken{} = True
@@ -212,25 +224,22 @@ deactivate t = t
 
 unToken :: Token -> Inlines Text
 unToken (InlineToken is) = is
-unToken (EmphDelimToken{..}) = str $ T.replicate dLength indicator
-    where indicator = case dChar of
-                          AsteriskIndicator   -> "*"
-                          UnderscoreIndicator -> "_"
+unToken (EmphDelimToken{..}) = str $ T.replicate dLength $ T.singleton $ indicatorChar dChar
 unToken (LinkOpenToken LinkOpener _ _ c) = Str "[" <| c
 unToken (LinkOpenToken ImageOpener _ _ c) = Str "![" <| c
-
-addInlines :: Seq Token -> Inlines Text -> Seq Token
-addInlines (viewr -> ts :> InlineToken is) i = ts |> InlineToken (is >< i)
-addInlines (viewr -> ts :> ot@LinkOpenToken{}) i = ts |> ot { content = content ot >< i }
-addInlines ts i = ts |> InlineToken i
 
 addInline :: Seq Token -> Inline Text -> Seq Token
 addInline (viewr -> ts :> ot@LinkOpenToken{}) i = ts |> ot { content = content ot |> i }
 addInline (viewr -> ts :> InlineToken is) i = ts |> InlineToken (is |> i)
 addInline ts i = ts |> InlineToken (singleton i)
 
-pEmphDelimToken :: Char -> Parser Token
-pEmphDelimToken c = do
+addInlines :: Seq Token -> Inlines Text -> Seq Token
+addInlines (viewr -> ts :> InlineToken is) i = ts |> InlineToken (is >< i)
+addInlines (viewr -> ts :> ot@LinkOpenToken{}) i = ts |> ot { content = content ot >< i }
+addInlines ts i = ts |> InlineToken i
+
+pEmphDelimToken :: EmphIndicator -> Parser Token
+pEmphDelimToken indicator@(indicatorChar -> c) = do
     preceded <- peekLastChar
     delim <- takeWhile1 (== c)
     followed <- peekChar
@@ -238,11 +247,14 @@ pEmphDelimToken c = do
         isRight = check preceded followed
         precededByPunctuation = fromMaybe False (isPunctuation <$> preceded)
         followedByPunctuation = fromMaybe False (isPunctuation <$> followed)
-    return $ case c of
-        '*' -> EmphDelimToken AsteriskIndicator (T.length delim) isLeft isRight
-        _   -> EmphDelimToken UnderscoreIndicator (T.length delim)
-                          (isLeft && (not isRight || precededByPunctuation))
-                          (isRight && (not isLeft || followedByPunctuation))
+    pure $ case indicator of
+      AsteriskIndicator ->
+        EmphDelimToken AsteriskIndicator (T.length delim) isLeft isRight
+
+      UnderscoreIndicator ->
+        EmphDelimToken UnderscoreIndicator (T.length delim)
+          (isLeft && (not isRight || precededByPunctuation))
+          (isRight && (not isLeft || followedByPunctuation))
     where
         check :: Maybe Char -> Maybe Char -> Bool
         check a b = fromMaybe False (not . isUnicodeWhitespace <$> a) &&
@@ -255,10 +267,13 @@ pLinkOpener = do
   openerType <- option LinkOpener (ImageOpener <$ char '!')
   lbl <- optional (lookAhead pLinkLabel)
   _ <- char '['
-  return $ LinkOpenToken openerType True lbl mempty
+  pure $ LinkOpenToken openerType True lbl mempty
 
 pEmphLinkDelim :: Parser Token
-pEmphLinkDelim = pEmphDelimToken '*' <|> pEmphDelimToken '_' <|> pLinkOpener
+pEmphLinkDelim =
+  pEmphDelimToken AsteriskIndicator
+    <|> pEmphDelimToken UnderscoreIndicator
+    <|> pLinkOpener
 
 pEmphTokens :: ParserOptions -> Parser (Seq Token)
 pEmphTokens opts =
@@ -407,7 +422,7 @@ pReference = do
                                        <* (endOfInput <|> void pLineEnding))
              else optional pLinkTitle <* skipWhile whitespaceNoNL
                                       <* (endOfInput <|> void pLineEnding)
-    return (lab, url, title)
+    pure (lab, url, title)
   where
     -- | optional scanWhitespace (including up to one line ending)
     scanWhitespaceNL = skipWhile whitespaceNoNL
