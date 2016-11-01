@@ -38,6 +38,9 @@ import           Text.Commonmark.Syntax.Builder
 import           Text.Html.Email.Validate
 import           Text.Html.Entity
 
+(<&>) :: Functor f => f a -> (a -> b) -> f b
+(<&>) = flip fmap
+
 parseInlines :: ParserOptions -> Text -> Inlines Text
 parseInlines opts t = normalization $
         case parse (msum <$> many (pInline opts) <* endOfInput) t of
@@ -261,44 +264,52 @@ pEmphTokens opts =
     go . Seq.singleton =<< pEmphLinkDelim
   where
     go :: Seq Token -> Parser (Seq Token)
-    go delimStack = asum
-      [ delimStack <$ endOfInput
-      , char ']' *> (go =<< lookForLinkOrImage delimStack)
-      , go . (delimStack |>) =<< pEmphLinkDelim
-      , go . addInlines delimStack =<< asum inline
-      ]
+    go ds = (go =<< step)
+        <|> (ds <$ endOfInput)
+      where
+        step = asum
+          [ char ']' *> lookForLinkOrImage ds
+          , pEmphLinkDelim <&> (ds |>)
+          , asum inline <&> addInlines ds
+          ]
 
     inline = [ pCode, pAutolink, pHtml, pText, pHardbreak, pSoftbreak
              , pBackslashed, pEntity, pFallback ]
 
     lookForLinkOrImage :: Seq Token -> Parser (Seq Token)
-    lookForLinkOrImage = (handle . swap) . Seq.breakr isLinkOpener
+    lookForLinkOrImage ds =
+      maybe (pure $ addInline afterLink closer) pOpenedLink mLinkOpener
       where
+        (beforeLink, mLinkOpener, afterLink) =
+           case Seq.breakr isLinkOpener ds of
+             (after, before) ->
+               case viewr before of
+                 EmptyR -> (before, Nothing, after)
+                 pre :> opener -> (pre, Just opener, after)
         closer = Str "]"
-        handle (viewr -> EmptyR, post) = pure (addInline post closer)
-        handle (viewr -> pre :> opener@(LinkOpenToken _ active _ c), post)
-          | not active = fallback
-          | otherwise = do
-              mLinkOrImage <- optional (pInlineLink constr content <|>
-                                        pReferenceLink constr content (refLabel opener))
-              case mLinkOrImage of
-                Nothing -> fallback
-                Just linkOrImage -> pure (addInlines (deactivating pre) linkOrImage)
-          where constr = case openerType opener of
-                           LinkOpener  -> Link
-                           ImageOpener -> Image
-                deactivating = case openerType opener of
-                                   LinkOpener -> fmap deactivate
-                                   ImageOpener -> id
-                content = foldMap unToken $ processEmphTokens (InlineToken c <| post)
-                fallback = pure (addInlines pre (unToken opener) >< addInline post closer)
-        handle (_, _) = mzero <?> "IMPOSSIBLE HAPPENED: expected LinkOpener"
+        pOpenedLink opener = option fallback $ do
+          guard (active opener)
+          addInlines (deactivating beforeLink) <$> pLink
+          where
+            fallback = addInlines beforeLink (unToken opener)
+                         <> addInline afterLink closer
+            constr = case openerType opener of
+                       LinkOpener  -> Link
+                       ImageOpener -> Image
+            deactivating = case openerType opener of
+                             LinkOpener -> fmap deactivate
+                             ImageOpener -> id
+            linkContent = foldMap unToken $ processEmphTokens (InlineToken (content opener) <| afterLink)
+            pLink = pInlineLink constr linkContent
+                <|> pReferenceLink constr linkContent (refLabel opener)
+
     pInlineLink constr content = do
       char '(' *> optional pWhitespace
       dest <- option "" pLinkDest
       title <- optional (pWhitespace *> pLinkTitle <* optional pWhitespace)
       char ')'
       pure $ singleton $ constr content dest title
+
     pReferenceLink constr content lbl = do
       ref <- (Just <$> pLinkLabel) <|> (lbl <$ optional "[]")
       maybe mzero (pure . singleton . uncurry (constr content))
