@@ -94,9 +94,14 @@ pBackslashed :: Parser (Inlines Text)
 pBackslashed = str <$> pBackslashedChar
 
 pHardbreak :: Parser (Inlines Text)
-pHardbreak = singleton HardBreak <$ asum
-    [ char '\\' *> pLineEnding *> skipWhile (== ' ')
-    , "  " *> skipWhile (== ' ') *> pLineEnding *> skipWhile (== ' ')]
+pHardbreak =
+  singleton HardBreak
+    <$ asum [ void (char '\\'), spaceScape ] <* pLineEnding
+    <* skipWhile (== ' ') -- ignore next line's leading spaces
+  where
+    spaceScape = do
+      replicateM 2 (char ' ')  -- two spaces
+      skipWhile (== ' ')       -- and more spaces (optionally)
 
 pSoftbreak :: Parser (Inlines Text)
 pSoftbreak = discardOpt (char ' ') *> pLineEnding
