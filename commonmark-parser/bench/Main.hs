@@ -3,20 +3,19 @@
 {-# LANGUAGE TemplateHaskell   #-}
 module Main where
 
-import           Control.DeepSeq
-import           Criterion.Main
-import           Data.FileEmbed
-import           Data.Foldable
-import           Data.Monoid
-import           Data.Text                      (Text)
-import qualified Data.Text                      as T
-import           Data.Text.Encoding
-import           Data.Text.Lazy                 (toStrict)
-import           Data.Text.Lazy.Builder
+import Control.DeepSeq
+import Criterion.Main
+import Data.FileEmbed
+import Data.Foldable
+import Data.Monoid
+import Data.Text              (Text)
+import Data.Text.Encoding
+import Data.Text.Lazy         (toStrict)
+import Data.Text.Lazy.Builder
 
-import           Text.Commonmark.Parser
-import           Text.Commonmark.Parser.Options
-import           Text.Commonmark.Syntax
+import Text.Commonmark.Parser
+import Text.Commonmark.Parser.Options
+import Text.Commonmark.Syntax
 
 samples :: [(FilePath, Text)]
 samples = map (fmap decodeUtf8) $(embedDir "bench/samples/")

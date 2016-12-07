@@ -1,14 +1,14 @@
 module Main where
 
 import           Criterion.Main
-import qualified Data.Text                       as T
-import qualified Data.Text.IO                    as T
+import qualified Data.Text      as Text
+import qualified Data.Text.IO   as Text
 
-import           CMark
-import           Control.DeepSeq
-import           Text.Commonmark.Html
-import           Text.Commonmark.Syntax
-import           Text.Commonmark.TestUtils.CMark
+import CMark
+import Control.DeepSeq
+import Text.Commonmark.Html
+import Text.Commonmark.Syntax
+import Text.Commonmark.TestUtils.CMark
 
 instance NFData Node
 instance NFData PosInfo
@@ -19,7 +19,7 @@ instance NFData DelimType
 
 main :: IO ()
 main = do
-    file <- T.readFile "benchinput.md"
+    file <- Text.readFile "benchinput.md"
     putStrLn "finished reading"
     let node = commonmarkToNode [optNormalize] file
         doc  = nodeToDoc node

@@ -23,14 +23,14 @@ import           Control.Applicative
 import           Control.Bool
 import           Control.Monad
 import           Data.Char
-import qualified Data.Map                          as M
+import qualified Data.Map            as Map
 import           Data.Monoid
-import           Data.Text                         (Text)
-import qualified Data.Text.Extended                as T
-import           Prelude                           hiding (takeWhile)
+import           Data.Text           (Text)
+import qualified Data.Text.Extended  as Text
+import           Prelude             hiding (takeWhile)
 
-import           Text.Commonmark.ParserCombinators
-import           Text.Commonmark.Types
+import Text.Commonmark.ParserCombinators
+import Text.Commonmark.Types
 
 type Scanner = Parser ()
 
@@ -68,13 +68,13 @@ pSpacesUpToColumn col = do
 pIndentSpaces :: Parser Text
 pIndentSpaces = do
   nonIndentSpaces <- pNonIndentSpaces
-  let count0 = T.length nonIndentSpaces
+  let count0 = Text.length nonIndentSpaces
   (count1, moreSpace) <- ((4,) <$> char '\t')
                      <|> ((1,) <$> char ' ')
   if count0 + count1 < 4
     then mzero
-    else pure $ T.snoc nonIndentSpaces moreSpace
-    
+    else pure $ Text.snoc nonIndentSpaces moreSpace
+
 -- Scan 0-3 spaces.
 pNonIndentSpaces :: Parser Text
 pNonIndentSpaces = satisfyUpTo 3 (== ' ')
@@ -99,10 +99,10 @@ lookupLinkReference
   -> Text                -- reference label
   -> Maybe (Text, Maybe Text)  -- (url, title)
 lookupLinkReference refmap key =
-  M.lookup (normalizeReference key) refmap
+  Map.lookup (normalizeReference key) refmap
 
 normalizeReference :: Text -> Text
-normalizeReference = T.toCaseFold . T.concat . T.split isSpace
+normalizeReference = Text.toCaseFold . Text.concat . Text.split isSpace
 
 parenthesize :: Text -> Text
 parenthesize x = "(" <> x <> ")"

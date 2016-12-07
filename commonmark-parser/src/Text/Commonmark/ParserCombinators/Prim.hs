@@ -35,7 +35,7 @@ import           Control.Applicative
 import           Control.Monad
 import           Data.String
 import           Data.Text           (Text)
-import qualified Data.Text           as T
+import qualified Data.Text           as Text
 import           Prelude             hiding (takeWhile)
 
 data Position
@@ -63,12 +63,12 @@ data ParserState
       }
 
 advance :: ParserState -> Text -> ParserState
-advance = T.foldl' go
+advance = Text.foldl' go
   where
     go :: ParserState -> Char -> ParserState
     go st c =
       ParserState
-        { subject = T.drop 1 (subject st)
+        { subject = Text.drop 1 (subject st)
         , position =
             case c of
               '\n' -> Position
@@ -95,7 +95,7 @@ withConsumed p = Parser $ \st ->
         Left err -> Left err
         Right (st', res) ->
             let consumedLength = point (position st') - point (position st)
-            in Right (st', (res, T.take consumedLength (subject st)))
+            in Right (st', (res, Text.take consumedLength (subject st)))
 
 consumedBy :: Parser a -> Parser Text
 consumedBy = fmap snd . withConsumed
@@ -156,11 +156,11 @@ instance MonadPlus Parser where
   {-# INLINE mplus #-}
 
 instance (a ~ Text) => IsString (Parser a) where
-  fromString = string . T.pack
+  fromString = string . Text.pack
 
 string :: Text -> Parser Text
 string s = Parser $ \st ->
-  if s `T.isPrefixOf` (subject st)
+  if s `Text.isPrefixOf` (subject st)
      then success (advance st s) s
      else failure st "string"
 {-# INLINE string #-}
@@ -171,7 +171,7 @@ failure st msg = Left $ ParseError (position st) msg
 
 success :: ParserState -> a -> Either ParseError (ParserState, a)
 success st x = Right (st, x)
-{-# INLINE success #-}  
+{-# INLINE success #-}
 
 (<?>) :: Parser a -> String -> Parser a
 p <?> msg = Parser $ \st ->
@@ -206,16 +206,16 @@ getPosition = position <$> getState
 
 satisfy :: (Char -> Bool) -> Parser Char
 satisfy f = Parser g
-  where g st = case T.uncons (subject st) of
+  where g st = case Text.uncons (subject st) of
                     Just (c, _) | f c ->
-                         success (advance st (T.singleton c)) c
+                         success (advance st (Text.singleton c)) c
                     _ -> failure st "character meeting condition"
 {-# INLINE satisfy #-}
 
 -- | Get the next character without consuming it.
 peekChar :: Parser (Maybe Char)
 peekChar = maybeHead . subject <$> getState
-  where maybeHead = fmap fst . T.uncons
+  where maybeHead = fmap fst . Text.uncons
 {-# INLINE peekChar #-}
 
 -- | Get the last consumed character.
@@ -231,11 +231,11 @@ replacing p = do
   s0 <- getState
   t <- p
   s1Subject <- subject <$> getState
-  Parser $ \_ -> success s0 { subject = T.append t s1Subject } ()
+  Parser $ \_ -> success s0 { subject = Text.append t s1Subject } ()
 
 endOfInput :: Parser ()
 endOfInput = Parser $ \st ->
-  if T.null (subject st)
+  if Text.null (subject st)
      then success st ()
      else failure st "end of input"
 {-# INLINE endOfInput #-}
@@ -250,14 +250,14 @@ setPosition pos = Parser $ \st -> success st{ position = pos } ()
 
 takeWhile :: (Char -> Bool) -> Parser Text
 takeWhile f = Parser $ \st ->
-  let t = T.takeWhile f (subject st) in
+  let t = Text.takeWhile f (subject st) in
   success (advance st t) t
 {-# INLINE takeWhile #-}
 
 takeWhile1 :: (Char -> Bool) -> Parser Text
 takeWhile1 f = Parser $ \st ->
-  case T.takeWhile f (subject st) of
-       t | T.null t  -> failure st "characters satisfying condition"
+  case Text.takeWhile f (subject st) of
+       t | Text.null t  -> failure st "characters satisfying condition"
          | otherwise -> success (advance st t) t
 {-# INLINE takeWhile1 #-}
 
@@ -269,28 +269,28 @@ untilTheEnd = Parser $ \st ->
 
 skip :: (Char -> Bool) -> Parser ()
 skip f = Parser $ \st ->
-  case T.uncons (subject st) of
-       Just (c,_) | f c -> success (advance st (T.singleton c)) ()
+  case Text.uncons (subject st) of
+       Just (c,_) | f c -> success (advance st (Text.singleton c)) ()
        _                -> failure st "character satisfying condition"
 {-# INLINE skip #-}
 
 
 skipWhile :: (Char -> Bool) -> Parser ()
 skipWhile f = Parser $ \st ->
-  let t' = T.takeWhile f (subject st) in
+  let t' = Text.takeWhile f (subject st) in
   success (advance st t') ()
 {-# INLINE skipWhile #-}
 
 skipWhile1 :: (Char -> Bool) -> Parser ()
 skipWhile1 f = Parser $ \st ->
-  case T.takeWhile f (subject st) of
-       t' | T.null t' -> failure st "characters satisfying condition"
+  case Text.takeWhile f (subject st) of
+       t' | Text.null t' -> failure st "characters satisfying condition"
           | otherwise -> success (advance st t') ()
 {-# INLINE skipWhile1 #-}
 
 stringCaseless :: Text -> Parser Text
-stringCaseless (T.toCaseFold -> s) = Parser $ \st ->
-  if T.toCaseFold s `T.isPrefixOf` T.toCaseFold (subject st)
+stringCaseless (Text.toCaseFold -> s) = Parser $ \st ->
+  if Text.toCaseFold s `Text.isPrefixOf` Text.toCaseFold (subject st)
      then success (advance st s) s
      else failure st "stringCaseless"
 
@@ -299,14 +299,14 @@ stringCaseless (T.toCaseFold -> s) = Parser $ \st ->
 scan :: s -> (s -> Char -> Maybe s) -> Parser Text
 scan s0 f = Parser $ go s0 []
   where go s cs st =
-         case T.uncons (subject st) of
+         case Text.uncons (subject st) of
                Nothing        -> finish st cs
                Just (c, _)    -> case f s c of
                                   Just s' -> go s' (c:cs)
-                                              (advance st (T.singleton c))
+                                              (advance st (Text.singleton c))
                                   Nothing -> finish st cs
         finish st cs =
-            success st (T.pack (reverse cs))
+            success st (Text.pack (reverse cs))
 {-# INLINE scan #-}
 
 lookAhead :: Parser a -> Parser a

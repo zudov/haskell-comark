@@ -6,9 +6,9 @@
 {-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE ViewPatterns        #-}
 module Text.Commonmark.Parser
-    ( commonmarkToDoc ) where
+  ( commonmarkToDoc ) where
 
-import           Prelude                           hiding (takeWhile)
+import Prelude hiding (takeWhile)
 
 import           Control.Applicative
 import           Control.Bool
@@ -17,23 +17,24 @@ import           Control.Monad.Trans.RWS.Strict
 import           Data.Char
 import           Data.Either
 import           Data.Foldable
-import           Data.List                         (intercalate)
-import qualified Data.Map                          as M
-import           Data.Maybe                        (mapMaybe)
+import           Data.List                      (intercalate)
+import qualified Data.Map                       as Map
+import           Data.Maybe                     (mapMaybe)
 import           Data.Monoid
-import           Data.Sequence
-  (Seq, ViewL(..), ViewR(..), singleton, viewl, viewr, (<|), (><), (|>))
-import qualified Data.Sequence                     as Seq
-import qualified Data.Set                          as Set
-import           Data.Text.Extended                (Text)
-import qualified Data.Text.Extended                as T
+import           Data.Sequence                  (Seq, ViewL (..), ViewR (..),
+                                                 singleton, viewl, viewr, (<|),
+                                                 (><), (|>))
+import qualified Data.Sequence                  as Seq
+import qualified Data.Set                       as Set
+import           Data.Text.Extended             (Text)
+import qualified Data.Text.Extended             as Text
 
-import           Text.Commonmark.Parser.Inline
-import           Text.Commonmark.Parser.Options
-import           Text.Commonmark.Parser.Util
-import           Text.Commonmark.ParserCombinators
-import           Text.Commonmark.Syntax
-import           Text.Commonmark.Types
+import Text.Commonmark.Parser.Inline
+import Text.Commonmark.Parser.Options
+import Text.Commonmark.Parser.Util
+import Text.Commonmark.ParserCombinators
+import Text.Commonmark.Syntax
+import Text.Commonmark.Types
 
 -- | Parses Commonmark document. Any sequence of characters is a valid
 --   Commonmark document.
@@ -139,7 +140,7 @@ containerContinue c = case containerType c of
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> notFollowedBy
       (void pBlankline
-         <|> (do pNonIndentSpaces
+         <|> (do _ <- pNonIndentSpaces
                  scanReference <|> scanBlockquoteStart <|> scanTBreakLine)
          <|> void parseAtxHeadingStart)
     _ -> pure ()
@@ -148,7 +149,9 @@ containerContinue c = case containerType c of
 -- Defines parsers that open new containers.
 containerStart :: Bool -> Bool -> Parser ContainerType
 containerStart afterListItem lastLineIsText = asum
-    [ pNonIndentSpaces *> pure BlockQuote <* scanBlockquoteStart
+    [ pNonIndentSpaces
+      *> scanBlockquoteStart
+      *> pure BlockQuote
     , parseListMarker afterListItem lastLineIsText
     ]
 
@@ -191,12 +194,12 @@ closeContainer = do
   ContainerStack top rest <- get
   case top of
     (Container Reference cs'') ->
-      case parse ((,) <$> pReference <*> untilTheEnd) (T.strip $ T.joinLines $ map extractText $ toList textlines) of
+      case parse ((,) <$> pReference <*> untilTheEnd) (Text.strip $ Text.joinLines $ map extractText $ toList textlines) of
            Right ((lab, lnk, tit), unconsumed) -> do
-             tell (M.singleton (normalizeReference lab) (lnk, tit))
+             tell (Map.singleton (normalizeReference lab) (lnk, tit))
              case rest of
                (Container ct' cs' : rs)
-                 | T.null unconsumed -> put $ ContainerStack (Container ct' (rest' <> cs' |> C top)) rs
+                 | Text.null unconsumed -> put $ ContainerStack (Container ct' (rest' <> cs' |> C top)) rs
                  | otherwise         -> put $ ContainerStack (Container ct' ((L (-1) (TextLine unconsumed) <| rest') >< (cs' |> C top))) rs
                [] -> return ()
            Left _ ->
@@ -242,12 +245,12 @@ addContainer ct = modify $ \(ContainerStack top rest) ->
 
 -- Step 2
 
--- Convert Document container and reference map into an AST.
+-- Convert Document container and reference map into an ASText.
 processDocument :: (Container, ParserOptions) -> Blocks Text
 processDocument (Container Document cs, opts) = processElts opts (toList cs)
 processDocument _ = error "top level container is not Document"
 
--- Turn the result of `processLines` into a proper AST.
+-- Turn the result of `processLines` into a proper ASText.
 -- This requires grouping text lines into paragraphs
 -- and list items into lists, handling blank lines,
 -- parsing inline contents of texts and resolving referencess.
@@ -259,7 +262,7 @@ processElts opts (L _lineNumber lf : rest) =
     -- Gobble text lines and make them into a Para:
     TextLine t ->
       singleton (Para $ parseInlines opts txt) <> processElts opts rest'
-        where txt = T.stripEnd $ T.joinLines $ map T.stripStart
+        where txt = Text.stripEnd $ Text.joinLines $ map Text.stripStart
                                $ t : map extractText textlines
               (textlines, rest') = span isTextLine rest
 
@@ -316,19 +319,19 @@ processElts opts (C (Container ct cs) : rest) =
           tightListItem (_:is) = not $ any isBlankLine $ init is
 
     FencedCode _ _ info -> CodeBlock (parseInfoString <$> info)
-                                     (T.unlines $ map extractText $ toList cs)
+                                     (Text.unlines $ map extractText $ toList cs)
                                 <| processElts opts rest
 
     IndentedCode -> CodeBlock Nothing txt <| processElts opts rest'
-        where txt = T.unlines $ stripTrailingEmpties $ concatMap extractCode cbs
-              stripTrailingEmpties = reverse . dropWhile (T.all (== ' ')) . reverse
+        where txt = Text.unlines $ stripTrailingEmpties $ concatMap extractCode cbs
+              stripTrailingEmpties = reverse . dropWhile (Text.all (== ' ')) . reverse
 
               -- explanation for next line:  when we parsed
               -- the blank line, we dropped 0-3 spaces.
               -- but for this, code block context, we want
               -- to have dropped 4 spaces. we simply drop
               -- one more:
-              extractCode (L _ (BlankLine t)) = [T.drop 1 t]
+              extractCode (L _ (BlankLine t)) = [Text.drop 1 t]
               extractCode (C (Container IndentedCode cs')) =
                   map extractText $ toList cs'
               extractCode _ = []
@@ -337,7 +340,7 @@ processElts opts (C (Container ct cs) : rest) =
                                   (C (Container ct cs) : rest)
 
     RawHtmlBlock _ -> HtmlBlock txt <| processElts opts rest
-        where txt = T.unlines (map extractText (toList cs))
+        where txt = Text.unlines (map extractText (toList cs))
 
     -- References have already been taken into account in the reference map,
     -- so we just skip.
@@ -352,7 +355,7 @@ extractText _ = mempty
 processLines :: Text -> (Container, ReferenceMap)
 processLines t = evalRWS (mapM_ processLine lns >> closeStack) () initState
   where
-    lns = zip [1..] $ T.lines' $ T.replace "\0" "\xFFFD" t
+    lns = zip [1..] $ Text.lines' $ Text.replace "\0" "\xFFFD" t
     initState = ContainerStack (Container Document mempty) []
 
 -- The main block-parsing function.
@@ -387,13 +390,13 @@ processLine (lineNumber, txt) = do
          else addLeaf lineNumber (TextLine t')
         where
           scanClosing = satisfyUpTo 3 (== ' ')
-                     *> string fence' *> skipWhile (== T.head fence')
+                     *> string fence' *> skipWhile (== Text.head fence')
                      *> pSpaces
                      *> endOfInput
 
 
     -- otherwise, parse the remainder to see if we have new container starts:
-    _ -> case tryNewContainers (isListItem ct) lastLineIsText (T.length txt - T.length t') t' of
+    _ -> case tryNewContainers (isListItem ct) lastLineIsText (Text.length txt - Text.length t') t' of
 
        -- lazy continuation: text line, last line was text, no new containers,
        -- some unmatched containers:
@@ -411,7 +414,7 @@ processLine (lineNumber, txt) = do
            | numUnmatched > 0
            , _ :> L _ TextLine{} <- viewr cs
            , ListItem{} <- ct
-           -> addLeaf lineNumber $ TextLine $ T.strip t
+           -> addLeaf lineNumber $ TextLine $ Text.strip t
 
        -- A special case: Lazy continuaation of a quote looking like
        -- indented code e.g:
@@ -421,7 +424,7 @@ processLine (lineNumber, txt) = do
          | numUnmatched > 0
          , _ :> L _ TextLine{} <- viewr cs
          , BlockQuote{} <- ct
-         -> addLeaf lineNumber $ TextLine $ T.strip t
+         -> addLeaf lineNumber $ TextLine $ Text.strip t
 
        -- if it's a setext header line and the top container has a textline
        -- as last child, add a setext header:
@@ -434,7 +437,7 @@ processLine (lineNumber, txt) = do
                       (cs' |> L lineNumber
                         (SetextHeading
                            lev
-                           (T.strip $ T.unlines
+                           (Text.strip $ Text.unlines
                                     $ fmap extractText
                                     $ toList textlines))))
                     rest
@@ -468,7 +471,7 @@ tabCrusher = do
       c <- peekChar
       case c of
         Just ' '  -> char ' '  *> go (cnt + 1) (acc <> " ")
-        Just '\t' -> char '\t' *> go (cnt + 4 - (cnt `mod` 4)) (acc <> T.replicate (4 - (cnt `mod` 4)) " ")
+        Just '\t' -> char '\t' *> go (cnt + 4 - (cnt `mod` 4)) (acc <> Text.replicate (4 - (cnt `mod` 4)) " ")
         _    -> pure acc
 
 -- Try to match the scanners corresponding to any currently open containers.
@@ -500,7 +503,7 @@ tryNewContainers afterListItem lastLineIsText offset t =
 
 textLineOrBlank :: Parser Leaf
 textLineOrBlank = consolidate <$> untilTheEnd
-  where consolidate ts | T.all (==' ') ts = BlankLine ts
+  where consolidate ts | Text.all (==' ') ts = BlankLine ts
                        | otherwise        = TextLine  ts
 
 -- Parse a leaf node.
@@ -536,7 +539,7 @@ parseAtxHeadingStart = do
   hashes <- satisfyUpTo 5 (== '#')
   -- hashes must be followed by space unless empty header:
   notFollowedBy (skip ((/= ' ') <&&> (/= '\t')))
-  pure $ case (T.length hashes + 1) of
+  pure $ case (Text.length hashes + 1) of
     1 -> Heading1
     2 -> Heading2
     3 -> Heading3
@@ -545,17 +548,17 @@ parseAtxHeadingStart = do
     6 -> Heading6
     _ -> error $ "IMPOSSIBLE HAPPENED: parseAtxHeading parsed more than 6 characters "
 parseAtxHeadingContent :: Parser Text
-parseAtxHeadingContent = T.strip . removeATXSuffix <$> untilTheEnd
+parseAtxHeadingContent = Text.strip . removeATXSuffix <$> untilTheEnd
   where removeATXSuffix t =
           case dropTrailingHashes of
-                 t' | T.null t' -> t'
+                 t' | Text.null t' -> t'
                       -- an escaped \#
-                    | T.last t' == '\\' -> t' <> T.replicate trailingHashes "#"
-                    | T.last t' /= ' ' -> t
+                    | Text.last t' == '\\' -> t' <> Text.replicate trailingHashes "#"
+                    | Text.last t' /= ' ' -> t
                     | otherwise -> t'
-          where dropTrailingSpaces = T.dropWhileEnd (== ' ') t
-                dropTrailingHashes = T.dropWhileEnd (== '#') dropTrailingSpaces
-                trailingHashes = T.length dropTrailingSpaces - T.length dropTrailingHashes
+          where dropTrailingSpaces = Text.dropWhileEnd (== ' ') t
+                dropTrailingHashes = Text.dropWhileEnd (== '#') dropTrailingSpaces
+                trailingHashes = Text.length dropTrailingSpaces - Text.length dropTrailingHashes
 
 parseSetextToken :: Parser Leaf
 parseSetextToken = fmap (uncurry SetextToken) $ withConsumed $ do
@@ -580,7 +583,7 @@ parseCodeFence :: Parser ContainerType
 parseCodeFence = do
   col <- column <$> getPosition
   cs <- takeWhile1 (=='`') <|> takeWhile1 (=='~')
-  guard $ T.length cs >= 3
+  guard $ Text.length cs >= 3
   void pSpaces
   rawattr <- optional (takeWhile1 (\c -> c /= '`' && c /= '~'))
   endOfInput
@@ -615,8 +618,8 @@ instance Eq Condition where
 
 lineContains :: Foldable t => t Text -> Parser ()
 lineContains terms = do
-  line <- T.toCaseFold <$> takeTill isLineEnding
-  guard $ any (`T.isInfixOf` line) terms
+  line <- Text.toCaseFold <$> takeTill isLineEnding
+  guard $ any (`Text.isInfixOf` line) terms
 
 condition1, condition2, condition3, condition4, condition5, condition6, condition7 :: Condition
 condition1 = Condition
@@ -650,7 +653,7 @@ condition6 = Condition
   { blockStart = do
       void $ "</" <|> "<"
       tag <- takeTill (isWhitespace <||> (== '/') <||> (== '>'))
-      guard $ isBlockHtmlTag (T.toLower tag)
+      guard $ isBlockHtmlTag (Text.toLower tag)
       void pWhitespace <|> void pLineEnding <|> void ">" <|> void "/>"
   , blockEnd = void pBlankline
   }
@@ -663,7 +666,7 @@ condition7 = Condition
     tagName = do
       c <- satisfy (inClass "A-Za-z")
       cs <- takeWhile ((== '-') <||> inClass "A-Za-z0-9")
-      guard (T.cons c cs `notElem` ["script", "style", "pre"])
+      guard (Text.cons c cs `notElem` ["script", "style", "pre"])
     attr = pWhitespace *> attrName *> optional attrValueSpec
     attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
     attrValueSpec = optional pWhitespace *> char '=' *>
@@ -678,7 +681,7 @@ condition7 = Condition
 
 -- List of block level tags for HTML 5.
 isBlockHtmlTag :: Text -> Bool
-isBlockHtmlTag name = T.toLower name `Set.member` Set.fromList
+isBlockHtmlTag name = Text.toLower name `Set.member` Set.fromList
   [ "address", "article", "aside", "base", "basefont", "blockquote"
   , "body", "caption", "center", "col", "colgroup", "dd", "details"
   , "dialog", "dir", "div", "dl", "dt", "fieldset", "figcaption"
@@ -698,7 +701,7 @@ isBlockHtmlTag name = T.toLower name `Set.member` Set.fromList
 parseListMarker :: Bool -> Bool -> Parser ContainerType
 parseListMarker afterListItem lastLineIsText = do
   tabCrusher
-  markerPadding <- T.length <$> if afterListItem then pSpaces else pNonIndentSpaces
+  markerPadding <- Text.length <$> if afterListItem then pSpaces else pNonIndentSpaces
   ty <- parseBullet <|> parseListNumber lastLineIsText
   -- padding is 1 if list marker followed by a blank line
   -- or indented code.  otherwise it's the length of the
@@ -706,7 +709,7 @@ parseListMarker afterListItem lastLineIsText = do
   tabCrusher
   contentPadding <- (1 <$ pBlankline)
                 <|> (1 <$ (skip (==' ') *> lookAhead pIndentSpaces))
-                <|> (T.length <$> pSpaces)
+                <|> (Text.length <$> pSpaces)
   -- text can't immediately follow the list marker:
   guard $ contentPadding > 0
   -- an empty list item cannot interrupt a paragraph

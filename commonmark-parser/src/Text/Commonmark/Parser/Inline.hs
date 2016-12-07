@@ -11,31 +11,30 @@ module Text.Commonmark.Parser.Inline
     , parseInfoString
     ) where
 
-import           Prelude                           hiding (takeWhile)
+import Prelude hiding (takeWhile)
 
 import           Control.Applicative
 import           Control.Bool
-import           Control.Monad                     hiding (mapM_)
+import           Control.Monad          hiding (mapM_)
 import           Data.Char.Extended
-import           Data.Foldable                     (asum)
+import           Data.Foldable          (asum)
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Sequence                     (Seq, ViewL (..), ViewR (..),
-                                                    singleton, viewl, viewr,
-                                                    (<|), (><), (|>))
-import qualified Data.Sequence.Extended            as Seq
-import           Data.Text                         (Text)
-import qualified Data.Text                         as T
-import qualified Data.Text.Lazy                    as TL
-import qualified Data.Text.Lazy.Builder            as TB
+import           Data.Sequence          (Seq, ViewL (..), ViewR (..), singleton,
+                                         viewl, viewr, (<|), (><), (|>))
+import qualified Data.Sequence.Extended as Seq
+import           Data.Text              (Text)
+import qualified Data.Text              as Text
+import qualified Data.Text.Lazy         as Text.Lazy
+import qualified Data.Text.Lazy.Builder as Text.Lazy.Builder
 
-import           Text.Commonmark.Parser.Options
-import           Text.Commonmark.Parser.Util
-import           Text.Commonmark.ParserCombinators
-import           Text.Commonmark.Syntax
-import           Text.Commonmark.Syntax.Builder
-import           Text.Html.Email.Validate
-import           Text.Html.Entity
+import Text.Commonmark.Parser.Options
+import Text.Commonmark.Parser.Util
+import Text.Commonmark.ParserCombinators
+import Text.Commonmark.Syntax
+import Text.Commonmark.Syntax.Builder
+import Text.Html.Email.Validate
+import Text.Html.Entity
 
 (<&>) :: Functor f => f a -> (a -> b) -> f b
 (<&>) = flip fmap
@@ -46,9 +45,9 @@ parseInlines opts t = normalization $
             Left e -> error ("parseInlines: " ++ show e) -- should not happen
             Right r -> r
     where normalization
-            | poNormalize opts = fmap (fmap (TL.toStrict . TB.toLazyText))
+            | poNormalize opts = fmap (fmap (Text.Lazy.toStrict . Text.Lazy.Builder.toLazyText))
                                      . normalize
-                                     . fmap (fmap TB.fromText)
+                                     . fmap (fmap Text.Lazy.Builder.fromText)
             | otherwise = id
 
 pInline :: ParserOptions -> Parser (Inlines Text)
@@ -74,7 +73,7 @@ pText :: Parser (Inlines Text)
 pText = str <$> takeWhile1 (not . isSpecial)
 
 pFallback :: Parser (Inlines Text)
-pFallback = str <$> (T.singleton <$> satisfy isSpecial)
+pFallback = str <$> (Text.singleton <$> satisfy isSpecial)
 
 isSpecial :: Char -> Bool
 isSpecial = inClass "\\`*_[]!&<\t\n\r "
@@ -82,7 +81,7 @@ isSpecial = inClass "\\`*_[]!&<\t\n\r "
 -- | Either backslash-escaped punctuation or an actual backslash
 pBackslashedChar :: Parser Text
 pBackslashedChar =
-    T.singleton <$> (char '\\' *> option '\\' (satisfy isAsciiPunctuation))
+    Text.singleton <$> (char '\\' *> option '\\' (satisfy isAsciiPunctuation))
 
 -- Parses a (possibly escaped) character satisfying the predicate.
 pSatisfy :: (Char -> Bool) -> Parser Char
@@ -114,7 +113,7 @@ pCode :: Parser (Inlines Text)
 pCode = do
     ticks <- backtickWord
     let end = string ticks *> notFollowedBy (char '`')
-    (singleton . Code . T.strip . T.concat <$> (codespan `manyTill` end))
+    (singleton . Code . Text.strip . Text.concat <$> (codespan `manyTill` end))
        <|> pure (str ticks)
     where codespan = backtickWord <|> nonBacktickWord <|> spaces
           backtickWord = takeWhile1 (== '`')
@@ -147,11 +146,11 @@ pHtml = singleton . RawHtml <$> consumedBy (asum scanners)
     cdata = "<![CDATA[" <* manyTill anyChar "]]>"
     comment = do
         "<!--" *> notFollowedBy (">" <|> "->")
-        comm <- T.pack <$> manyTill anyChar "-->"
-        guard $ not $ T.head comm == '>'
-                   || "->" `T.isPrefixOf` comm
-                   || T.last comm == '-'
-                   || "--" `T.isInfixOf` comm
+        comm <- Text.pack <$> manyTill anyChar "-->"
+        guard $ not $ Text.head comm == '>'
+                   || "->" `Text.isPrefixOf` comm
+                   || Text.last comm == '-'
+                   || "--" `Text.isInfixOf` comm
 
 -- [ Entities ] ----------------------------------------------------------------
 
@@ -169,13 +168,14 @@ pEntityText =
       decEntity <|> hexEntity
     namedEntity = do
       name <- takeWhile1 (/= ';')
+      -- asum works over Maybe. Nothing turns into mzero.
       asum (pure <$> entityNameChars name)
         <?> "not a named entity"
     decEntity =
-      T.singleton . chrSafe <$> decimal
+      Text.singleton . chrSafe <$> decimal
     hexEntity = do
       char 'x' <|> char 'X'
-      T.singleton . chrSafe <$> hexadecimal
+      Text.singleton . chrSafe <$> hexadecimal
 
 -- [ Autolinks ] ---------------------------------------------------------------
 pAutolink :: Parser (Inlines Text)
@@ -196,7 +196,7 @@ pScheme :: Parser Text
 pScheme = do
   a <- satisfy (isAscii <&&> isLetter)
   as <- takeWhile1 ((isAscii <&&> (isLetter <||> isDigit)) <||> (== '+') <||> (== '.') <||> (== '-'))
-  mfilter ((<= 32) . T.length) $ pure $ T.cons a as
+  mfilter ((<= 32) . Text.length) $ pure $ Text.cons a as
 
 -- [ Emphasis, Links, and Images ] ---------------------------------------------
 
@@ -240,7 +240,7 @@ deactivate t = t
 
 unToken :: Token -> Inlines Text
 unToken (InlineToken is) = is
-unToken (EmphDelimToken{..}) = str $ T.replicate dLength $ T.singleton $ indicatorChar dChar
+unToken (EmphDelimToken{..}) = str $ Text.replicate dLength $ Text.singleton $ indicatorChar dChar
 unToken (LinkOpenToken LinkOpener _ _ c) = Str "[" <| c
 unToken (LinkOpenToken ImageOpener _ _ c) = Str "![" <| c
 
@@ -265,10 +265,10 @@ pEmphDelimToken indicator@(indicatorChar -> c) = do
         followedByPunctuation = fromMaybe False (isPunctuation <$> followed)
     pure $ case indicator of
       AsteriskIndicator ->
-        EmphDelimToken AsteriskIndicator (T.length delim) isLeft isRight
+        EmphDelimToken AsteriskIndicator (Text.length delim) isLeft isRight
 
       UnderscoreIndicator ->
-        EmphDelimToken UnderscoreIndicator (T.length delim)
+        EmphDelimToken UnderscoreIndicator (Text.length delim)
           (isLeft && (not isRight || precededByPunctuation))
           (isRight && (not isLeft || followedByPunctuation))
     where
@@ -397,7 +397,7 @@ single constructor ils | Seq.null ils = mempty
                        | otherwise    = singleton (constructor ils)
 
 pLinkLabel :: Parser Text
-pLinkLabel = char '[' *> (T.concat <$> someTill chunk (char ']'))
+pLinkLabel = char '[' *> (Text.concat <$> someTill chunk (char ']'))
   where chunk = regChunk <|> bracketChunk <|> backslashChunk
         regChunk = takeWhile1 (`notElem` ("[]\\" :: [Char]))
         bracketChunk = char '\\' *> ("[" <|> "]")
@@ -407,11 +407,11 @@ pLinkDest :: Parser Text
 pLinkDest = do
   inPointy <- (True <$ char '<') <|> pure False
   if inPointy
-     then T.pack <$> manyTill (pSatisfy (`notElem` ("\r\n " :: [Char]))) (char '>')
-     else T.concat <$> some (regChunk <|> parenChunk)
+     then Text.pack <$> manyTill (pSatisfy (`notElem` ("\r\n " :: [Char]))) (char '>')
+     else Text.concat <$> some (regChunk <|> parenChunk)
   where regChunk = takeWhile1 (notInClass " \n\r()\\&" <&&> (not . isControl))
                 <|> pEntityText <|> pBackslashedChar
-        parenChunk = parenthesize . T.concat <$> (char '(' *>
+        parenChunk = parenthesize . Text.concat <$> (char '(' *>
                        manyTill regChunk (char ')'))
 
 pLinkTitle :: Parser Text
@@ -423,12 +423,12 @@ pLinkTitle = surroundedWith ("('\"'" :: [Char])
                   regChunk = takeWhile1 ((/= ender) <&&> (/= '\\') <&&> (/= '&'))
                           <|> pEntityText <|> "&" <|> pBackslashedChar
                   nestedChunk = parenthesize <$> surroundedWith "("
-              T.concat <$> manyTill (regChunk <|> nestedChunk) pEnder
+              Text.concat <$> manyTill (regChunk <|> nestedChunk) pEnder
 
 pReference :: Parser (Text, Text, Maybe Text)
 pReference = do
     lab <- pLinkLabel <* char ':'
-    guard $ isJust $ T.find (not . isWhitespace) lab
+    guard $ isJust $ Text.find (not . isWhitespace) lab
     scanWhitespaceNL
     url <- pLinkDest <* skipWhile whitespaceNoNL
     titleOnNewLine <- isJust <$> optional pLineEnding

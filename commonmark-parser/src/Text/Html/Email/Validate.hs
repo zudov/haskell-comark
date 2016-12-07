@@ -6,7 +6,7 @@ module Text.Html.Email.Validate
 import           Control.Monad
 import           Data.Either                       (isRight)
 import           Data.Text                         (Text)
-import qualified Data.Text                         as T
+import qualified Data.Text                         as Text
 import           Text.Commonmark.ParserCombinators
 
 isValidEmail :: Text -> Bool

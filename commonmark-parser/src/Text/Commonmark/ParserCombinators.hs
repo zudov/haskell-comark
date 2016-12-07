@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE ViewPatterns          #-}
 module Text.Commonmark.ParserCombinators (
     Position(..)
   , Parser
@@ -55,7 +54,7 @@ import qualified Data.Char           as Char
 import qualified Data.Set            as Set
 import           Data.String
 import           Data.Text           (Text)
-import qualified Data.Text           as T
+import qualified Data.Text           as Text
 import           Prelude             hiding (takeWhile)
 
 import Text.Commonmark.ParserCombinators.Prim
@@ -146,11 +145,11 @@ skipMany1 p = p *> skipMany p
 
 -- | Parse and decode an unsigned decimal number.
 decimal :: Integral a => Parser a
-decimal = T.foldl' step 0 `fmap` takeWhile1 Char.isDigit
+decimal = Text.foldl' step 0 `fmap` takeWhile1 Char.isDigit
   where step a c = a * 10 + fromIntegral (Char.ord c - 48)
 
 hexadecimal :: (Integral a, Bits a) => Parser a
-hexadecimal = T.foldl' step 0 `fmap` takeWhile1 isHexDigit
+hexadecimal = Text.foldl' step 0 `fmap` takeWhile1 isHexDigit
   where
     isHexDigit c = (c >= '0' && c <= '9') ||
                    (c >= 'a' && c <= 'f') ||
