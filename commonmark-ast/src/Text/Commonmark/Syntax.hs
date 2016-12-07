@@ -25,12 +25,12 @@ module Text.Commonmark.Syntax
     , asText
     ) where
 
-import           Control.DeepSeq (NFData)
-import           Data.Data       (Data, Typeable)
-import           Data.Monoid
-import           Data.Sequence   (Seq, ViewL(..), viewl, (<|))
-import           Data.String     (IsString(..))
-import           GHC.Generics    (Generic)
+import Control.DeepSeq (NFData)
+import Data.Data       (Data, Typeable)
+import Data.Monoid
+import Data.Sequence   (Seq, ViewL (..), viewl, (<|))
+import Data.String     (IsString (..))
+import GHC.Generics    (Generic)
 
 
 -- | A Document

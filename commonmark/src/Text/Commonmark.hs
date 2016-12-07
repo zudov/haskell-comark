@@ -15,11 +15,11 @@ module Text.Commonmark
     , commonmarkToHtml
     ) where
 
-import           Data.Text                      (Text)
+import Data.Text (Text)
 
-import           Text.Commonmark.Html
-import           Text.Commonmark.Parser
-import           Text.Commonmark.Parser.Options
+import Text.Commonmark.Html
+import Text.Commonmark.Parser
+import Text.Commonmark.Parser.Options
 
 -- | Parse Commonmark document and render it as HTML.
 commonmarkToHtml :: [ParserOption] -> Text -> Text

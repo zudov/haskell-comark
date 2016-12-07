@@ -2,15 +2,15 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main where
 
-import           Control.Applicative
+import Control.Applicative
 
-import qualified Data.Text.IO        as T
+import qualified Data.Text.IO as T
 
-import           System.Environment
-import           System.Exit
-import           System.IO
+import System.Environment
+import System.Exit
+import System.IO
 
-import           Text.Commonmark
+import Text.Commonmark
 
 data Options = Options { outputFormat :: Format
                        , normalize    :: Bool

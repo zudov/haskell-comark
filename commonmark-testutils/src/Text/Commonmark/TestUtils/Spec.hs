@@ -9,14 +9,14 @@ module Text.Commonmark.TestUtils.Spec
     ) where
 
 import           Data.Aeson
-import qualified Data.ByteString.Lazy              as B
-import           Data.Maybe                        (fromJust)
-import           Data.Sequence                     (ViewL(..), viewl)
-import           Data.Text                         (Text)
+import qualified Data.ByteString.Lazy as B
+import           Data.Maybe           (fromJust)
+import           Data.Sequence        (ViewL (..), viewl)
+import           Data.Text            (Text)
 
-import           Text.Commonmark.Syntax
+import Text.Commonmark.Syntax
 
-import           Text.Commonmark.TestUtils.Spec.TH
+import Text.Commonmark.TestUtils.Spec.TH
 
 spec :: [SpecTest Text Text]
 spec = fromJust $ decode $ B.fromStrict $(specFile)

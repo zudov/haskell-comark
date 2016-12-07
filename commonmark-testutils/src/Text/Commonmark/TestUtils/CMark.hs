@@ -7,15 +7,15 @@ module Text.Commonmark.TestUtils.CMark
     , nodeToInline
     ) where
 
-import           Control.Monad          (mfilter)
+import           Control.Monad (mfilter)
 import           Data.Monoid
-import qualified Data.Sequence          as Seq
-import           Data.Text              (Text)
-import qualified Data.Text              as Text
+import qualified Data.Sequence as Seq
+import           Data.Text     (Text)
+import qualified Data.Text     as Text
 
-import           CMark
+import CMark
 
-import           Text.Commonmark.Syntax
+import Text.Commonmark.Syntax
 
 -- | Converts a cmark's AST to commonmark's AST
 nodeToDoc :: Node -> Doc Text

@@ -23,5 +23,7 @@ domain = () <$ label `sepBy1` char '.'
 
 label :: Parser ()
 label = do
-    lbl <- T.intercalate "-" <$> takeWhile1 (inClass "A-Za-z0-9") `sepBy1` char '-'
-    when (T.length lbl > 63) $ fail "Label is too long"
+    lbl <- Text.intercalate "-" <$> labelChars `sepBy1` char '-'
+    guard (Text.length lbl <= 63) <?> "Label is too long"
+  where
+    labelChars = takeWhile1 (inClass "A-Za-z0-9")

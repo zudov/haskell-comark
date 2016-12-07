@@ -1,17 +1,17 @@
 module Main where
 
-import           Blocks
-import           Inline
-import           Test.Hspec
-import           Test.Hspec.QuickCheck
-import           Test.QuickCheck
+import Blocks
+import Inline
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck
 
-import           Control.DeepSeq
-import           Data.Text                      (pack)
+import Control.DeepSeq
+import Data.Text       (pack)
 
-import           Text.Commonmark.Parser
-import           Text.Commonmark.Parser.Options
-import           Text.Commonmark.Syntax
+import Text.Commonmark.Parser
+import Text.Commonmark.Parser.Options
+import Text.Commonmark.Syntax
 
 main :: IO ()
 main = do

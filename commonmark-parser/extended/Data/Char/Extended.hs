@@ -3,8 +3,8 @@ module Data.Char.Extended
     , chrSafe
     ) where
 
-import           Data.Char
-import           Data.Ix   (inRange)
+import Data.Char
+import Data.Ix   (inRange)
 
 -- | Invalid Unicode codepoints and NUL will be written as the "unknown codepoint"
 --   character (0xFFFD)

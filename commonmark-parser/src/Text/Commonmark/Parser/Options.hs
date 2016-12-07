@@ -8,8 +8,8 @@ module Text.Commonmark.Parser.Options
     , poParseEmphasis
     ) where
 
-import           Data.Monoid (Endo (Endo, appEndo))
-import           Data.Text   (Text)
+import Data.Monoid (Endo (Endo, appEndo))
+import Data.Text   (Text)
 
 data ParserOption
   = -- | Consolidate adjacent text nodes

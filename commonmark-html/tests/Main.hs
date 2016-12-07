@@ -1,14 +1,14 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main where
 
-import           Control.Monad
+import Control.Monad
 
-import           Test.Hspec
+import Test.Hspec
 
-import           Text.Commonmark.TestUtils.CMark
-import           Text.Commonmark.TestUtils.Spec
+import Text.Commonmark.TestUtils.CMark
+import Text.Commonmark.TestUtils.Spec
 
-import           Text.Commonmark.Html
+import Text.Commonmark.Html
 
 
 

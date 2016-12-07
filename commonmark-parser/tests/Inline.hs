@@ -1,22 +1,22 @@
 {-# LANGUAGE RecordWildCards #-}
 module Inline where
 
-import           Data.Text                       (Text)
-import qualified Data.Text                       as Text
+import           Data.Text  (Text)
+import qualified Data.Text  as Text
 import           Test.Hspec
 
 import           Data.Maybe
-import qualified Data.Sequence                   as Seq
+import qualified Data.Sequence as Seq
 
-import           Text.Commonmark.Parser
-import           Text.Commonmark.Parser.Options
-import           Text.Commonmark.Syntax
-import           Text.Commonmark.TestUtils.CMark
-import           Text.Commonmark.TestUtils.Spec
+import Text.Commonmark.Parser
+import Text.Commonmark.Parser.Options
+import Text.Commonmark.Syntax
+import Text.Commonmark.TestUtils.CMark
+import Text.Commonmark.TestUtils.Spec
 
-import           Control.Monad
-import           Data.Foldable                   (toList)
-import           Unsafe.Coerce
+import Control.Monad
+import Data.Foldable (toList)
+import Unsafe.Coerce
 
 testInline :: Spec
 testInline = do
