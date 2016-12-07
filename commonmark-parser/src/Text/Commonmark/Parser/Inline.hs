@@ -159,12 +159,23 @@ pEntity :: Parser (Inlines Text)
 pEntity = str <$> pEntityText
 
 pEntityText :: Parser Text
-pEntityText = char '&' *> ((char '#' *> (decEntity <|> hexEntity)) <|> namedEntity) <* char ';'
-    where namedEntity, decEntity, hexEntity :: Parser Text
-          namedEntity = (maybe (mzero <?> "not a named entity") pure
-                      . entityNameChars) =<< takeWhile1 (/= ';')
-          decEntity = T.singleton . chrSafe <$> decimal
-          hexEntity = (char 'x' <|> char 'X') *> (T.singleton . chrSafe <$> hexadecimal)
+pEntityText =
+    char '&' *> entityBody <* char ';'
+  where
+    entityBody =
+      codepointEntity <|> namedEntity
+    codepointEntity = do
+      char '#'
+      decEntity <|> hexEntity
+    namedEntity = do
+      name <- takeWhile1 (/= ';')
+      asum (pure <$> entityNameChars name)
+        <?> "not a named entity"
+    decEntity =
+      T.singleton . chrSafe <$> decimal
+    hexEntity = do
+      char 'x' <|> char 'X'
+      T.singleton . chrSafe <$> hexadecimal
 
 -- [ Autolinks ] ---------------------------------------------------------------
 pAutolink :: Parser (Inlines Text)
