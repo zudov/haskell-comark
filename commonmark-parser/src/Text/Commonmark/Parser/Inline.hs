@@ -127,34 +127,54 @@ pCode = singleton <$> do
 
 -- [ Raw Html ] ----------------------------------------------------------------
 pHtml :: Parser (Inlines Text)
-pHtml = singleton . RawHtml <$> consumedBy (asum scanners)
+pHtml =
+  singleton . RawHtml <$> consumedBy (asum scanners)
   where
-    scanners = [ void openTag, void closeTag, void comment
-               , void instruct, void declar, void cdata
-               ]
-    tagName = satisfy (inClass "A-Za-z") *> skipWhile ((== '-') <||> (inClass "A-Za-z0-9"))
-    attr = pWhitespace *> attrName *> optional attrValueSpec
-    attrName = satisfy (inClass "_:A-Za-z") *> skipWhile (inClass "A-Za-z0-9_.:-")
-    attrValueSpec = optional pWhitespace *> char '=' *>
-                    optional pWhitespace *> attrValue
-    attrValue = void unquoted <|> void singleQuoted <|> void doubleQuoted
-    unquoted = skipWhile1 (notInClass " \"'=<>`")
-    singleQuoted = "'" *> skipWhile (/= '\'') *> "'"
-    doubleQuoted = "\"" *> skipWhile (/= '"') *> "\""
-    openTag = "<" *> tagName *> many attr *> optional pWhitespace
-                                          *> optional "/" *> ">"
-    closeTag = "</" *> tagName *> optional pWhitespace *> ">"
-    instruct = "<?" <* manyTill anyChar "?>"
-    declar = "<!" *> skipWhile1 isAsciiUpper *> pWhitespace
-                  *> skipWhile (/= '>') *> char '>'
-    cdata = "<![CDATA[" <* manyTill anyChar "]]>"
+    scanners =
+      [ void tag, void comment, void instruction, void declaration, void cdata ]
+    instruction = "<?" *> manyTill anyChar "?>"
+    cdata = "<![CDATA[" *> manyTill anyChar "]]>"
+    declaration = do
+      "<!" *> skipWhile1 isAsciiUpper
+      pWhitespace
+      skipWhile (/= '>') <* char '>'
     comment = do
-        "<!--" *> notFollowedBy (">" <|> "->")
-        comm <- Text.pack <$> manyTill anyChar "-->"
-        guard $ not $ Text.head comm == '>'
-                   || "->" `Text.isPrefixOf` comm
-                   || Text.last comm == '-'
-                   || "--" `Text.isInfixOf` comm
+      "<!--" *> notFollowedBy (">" <|> "->")
+      comm <- Text.pack <$> manyTill anyChar "-->"
+      guard $ not $ or
+        [ Text.head comm == '>'
+        , "->" `Text.isPrefixOf` comm
+        , Text.last comm == '-'
+        , "--" `Text.isInfixOf` comm
+        ]
+    tag = openTag <|> closeTag
+      where
+        openTag = do
+          "<" *> tagName
+          many attr <* optional pWhitespace
+          optional "/" *> ">"
+          where
+            attr = do
+              pWhitespace *> attrName
+              optional attrValueSpec
+              where
+                attrName = do
+                  satisfy ((isAscii <&&> isLetter) <||> inClass "_:")
+                  skipWhile ((isAscii <&&> (isLetter <||> isDigit)) <||> inClass "_:.-")
+                attrValueSpec = do
+                  optional pWhitespace *> char '='
+                  optional pWhitespace *> attrValue
+                attrValue =
+                  unquoted <|> singleQuoted <|> doubleQuoted
+                  where
+                    unquoted     = skipWhile1 (notInClass " \"'=<>`")
+                    singleQuoted = char '\'' *> skipWhile (/= '\'') <* char '\''
+                    doubleQuoted = char '"'  *> skipWhile (/= '"')  <* char '"'
+        closeTag =
+          "</" *> tagName *> optional pWhitespace *> ">"
+        tagName = do
+          satisfy (isAscii <&&> isLetter)
+          skipWhile ((== '-') <||> (isAscii <&&> (isLetter <||> isDigit)))
 
 -- [ Entities ] ----------------------------------------------------------------
 
