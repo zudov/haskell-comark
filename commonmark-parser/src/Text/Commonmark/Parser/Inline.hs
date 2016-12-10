@@ -110,16 +110,20 @@ pSoftbreak = discardOpt (char ' ') *> pLineEnding
 -- [ Code ] --------------------------------------------------------------------
 
 pCode :: Parser (Inlines Text)
-pCode = do
-    ticks <- backtickWord
-    let end = string ticks *> notFollowedBy (char '`')
-    (singleton . Code . Text.strip . Text.concat <$> (codespan `manyTill` end))
-       <|> pure (str ticks)
-    where codespan = backtickWord <|> nonBacktickWord <|> spaces
-          backtickWord = takeWhile1 (== '`')
-          nonBacktickWord = takeWhile1 ((/= '`') <&&> (not . collapsableSpace))
-          spaces = " " <$ takeWhile1 collapsableSpace
-          collapsableSpace = (== ' ') <||> isLineEnding
+pCode = singleton <$> do
+  startTicks <- backtickChunk
+  let pEndTicks = string startTicks <* notFollowedBy (char '`')
+      pContent  = code <$> (codechunk `manyTill` pEndTicks)
+      fallback  = Str startTicks
+  pContent <|> pure fallback
+  where
+    code      = Code . Text.strip . Text.concat
+    codechunk = backtickChunk <|> nonBacktickChunk <|> spaceChunk
+
+    backtickChunk      = takeWhile1 (== '`')
+    nonBacktickChunk   = takeWhile1 ((/= '`') <&&> (not . isCollapsableSpace))
+    spaceChunk         =  " " <$ takeWhile1 isCollapsableSpace
+    isCollapsableSpace = (== ' ') <||> isLineEnding
 
 -- [ Raw Html ] ----------------------------------------------------------------
 pHtml :: Parser (Inlines Text)
