@@ -23,7 +23,6 @@ library
       Text.Commonmark.Parser
       Text.Commonmark.Parser.Options
   other-modules:
-      Data.Sequence.Extended
       Text.Commonmark.Parser.Inline
       Text.Commonmark.Parser.Util
       Text.Commonmark.ParserCombinators
@@ -31,6 +30,7 @@ library
       Text.Commonmark.Types
       Text.Html.Email.Validate
       Data.Char.Extended
+      Data.Sequence.Extended
       Data.Text.Extended
       Paths_commonmark_parser
   other-extensions: OverloadedStrings TupleSections TupleSections ViewPatterns OverloadedStrings LambdaCase RecordWildCards
