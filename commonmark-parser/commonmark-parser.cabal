@@ -24,6 +24,7 @@ library
       Text.Commonmark.Parser.Options
   other-modules:
       Text.Commonmark.Parser.Inline
+      Text.Commonmark.Parser.Inline.EmphLink
       Text.Commonmark.Parser.Util
       Text.Commonmark.ParserCombinators
       Text.Commonmark.ParserCombinators.Prim

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -20,14 +21,15 @@ import           Data.Char.Extended
 import           Data.Foldable          (asum)
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Sequence          (Seq, ViewL (..), ViewR (..), singleton,
-                                         viewl, viewr, (<|), (><), (|>))
+import           Data.Sequence          (Seq, ViewL (..), singleton, viewl,
+                                         (<|), (|>))
 import qualified Data.Sequence.Extended as Seq
 import           Data.Text              (Text)
 import qualified Data.Text              as Text
 import qualified Data.Text.Lazy         as Text.Lazy
 import qualified Data.Text.Lazy.Builder as Text.Lazy.Builder
 
+import Text.Commonmark.Parser.Inline.EmphLink
 import Text.Commonmark.Parser.Options
 import Text.Commonmark.Parser.Util
 import Text.Commonmark.ParserCombinators
@@ -224,60 +226,6 @@ pScheme = do
 
 -- [ Emphasis, Links, and Images ] ---------------------------------------------
 
-data Token
-  = InlineToken (Inlines Text)
-  | EmphDelimToken
-      { dChar     :: EmphIndicator
-      , dLength   :: Int
-      , dCanOpen  :: Bool
-      , dCanClose :: Bool
-      }
-  | LinkOpenToken
-      { openerType :: OpenerType
-      , active     :: Bool
-      , refLabel   :: Maybe Text
-      , content    :: Inlines Text
-      }
-  deriving (Show, Eq)
-
-data EmphIndicator
-  = AsteriskIndicator
-  | UnderscoreIndicator
-  deriving (Show, Eq)
-
-indicatorChar :: EmphIndicator -> Char
-indicatorChar AsteriskIndicator = '*'
-indicatorChar UnderscoreIndicator = '_'
-
-data OpenerType
-  = LinkOpener
-  | ImageOpener
-  deriving (Show, Eq)
-
-isLinkOpener :: Token -> Bool
-isLinkOpener LinkOpenToken{} = True
-isLinkOpener _ = False
-
-deactivate :: Token -> Token
-deactivate t@LinkOpenToken{..} = t { active = openerType == ImageOpener }
-deactivate t = t
-
-unToken :: Token -> Inlines Text
-unToken (InlineToken is) = is
-unToken (EmphDelimToken{..}) = str $ Text.replicate dLength $ Text.singleton $ indicatorChar dChar
-unToken (LinkOpenToken LinkOpener _ _ c) = Str "[" <| c
-unToken (LinkOpenToken ImageOpener _ _ c) = Str "![" <| c
-
-addInline :: Seq Token -> Inline Text -> Seq Token
-addInline (viewr -> ts :> ot@LinkOpenToken{}) i = ts |> ot { content = content ot |> i }
-addInline (viewr -> ts :> InlineToken is) i = ts |> InlineToken (is |> i)
-addInline ts i = ts |> InlineToken (singleton i)
-
-addInlines :: Seq Token -> Inlines Text -> Seq Token
-addInlines (viewr -> ts :> InlineToken is) i = ts |> InlineToken (is >< i)
-addInlines (viewr -> ts :> ot@LinkOpenToken{}) i = ts |> ot { content = content ot >< i }
-addInlines ts i = ts |> InlineToken i
-
 pEmphDelimToken :: EmphIndicator -> Parser Token
 pEmphDelimToken indicator@(indicatorChar -> c) = do
     preceded <- peekLastChar
@@ -310,10 +258,11 @@ pLinkOpener = do
   pure $ LinkOpenToken openerType True lbl mempty
 
 pEmphLinkDelim :: Parser Token
-pEmphLinkDelim =
-  pEmphDelimToken AsteriskIndicator
-    <|> pEmphDelimToken UnderscoreIndicator
-    <|> pLinkOpener
+pEmphLinkDelim = asum
+  [ pEmphDelimToken AsteriskIndicator
+  , pEmphDelimToken UnderscoreIndicator
+  , pLinkOpener
+  ]
 
 pEmphTokens :: ParserOptions -> Parser (Seq Token)
 pEmphTokens opts =
