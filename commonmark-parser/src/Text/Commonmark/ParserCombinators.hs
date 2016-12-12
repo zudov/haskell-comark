@@ -94,16 +94,19 @@ anyChar = satisfy (const True)
 takeTill f = takeWhile (not . f)
 {-# INLINE takeTill #-}
 
--- | A folding parser
-foldP :: (b -> a -> Parser (Maybe b))
+foldP :: (b -> Parser (Maybe b)) -> b -> Parser b
+foldP f = foldP' (\s _ -> f s) (pure ())
+
+-- | A folding parser with input supplying funciton
+foldP' :: (b -> a -> Parser (Maybe b))
       -> Parser a -- ^ A parser that supplies more input
       -> b -- ^ Initial value
       -> Parser b
-foldP f p b0 = p >>= go b0
+foldP' f p b0 = p >>= go b0
   where go b1 a = f b1 a >>= \case Nothing -> pure b1
                                    Just b2 -> p >>= go b2
 
-{-# INLINE foldP #-}
+{-# INLINE foldP' #-}
 
 -- combinators (most definitions borrowed from attoparsec)
 
