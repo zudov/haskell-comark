@@ -12,6 +12,8 @@ import Text.Commonmark.Syntax.Builder
 
 import Data.Sequence (Seq, ViewR (..), singleton, viewr, (<|), (><), (|>))
 
+type DelimStack = Seq Token
+
 data Token
   = InlineToken (Inlines Text)
   | EmphDelimToken
@@ -46,6 +48,10 @@ data EmphIndicator
   = AsteriskIndicator
   | UnderscoreIndicator
   deriving (Show, Eq)
+
+isAsterisk :: EmphIndicator -> Bool
+isAsterisk AsteriskIndicator   = True
+isAsterisk UnderscoreIndicator = False
 
 indicatorChar :: EmphIndicator -> Char
 indicatorChar AsteriskIndicator   = '*'

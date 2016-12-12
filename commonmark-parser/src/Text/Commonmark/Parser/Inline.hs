@@ -21,8 +21,8 @@ import           Data.Char.Extended
 import           Data.Foldable          (asum)
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Sequence          (Seq, ViewL (..), singleton, viewl,
-                                         (<|), (|>))
+import           Data.Sequence          (ViewL (..), singleton, viewl, (<|),
+                                         (|>))
 import qualified Data.Sequence.Extended as Seq
 import           Data.Text              (Text)
 import qualified Data.Text              as Text
@@ -264,11 +264,11 @@ pEmphLinkDelim = asum
   , pLinkOpener
   ]
 
-pEmphTokens :: ParserOptions -> Parser (Seq Token)
+pEmphTokens :: ParserOptions -> Parser (DelimStack)
 pEmphTokens opts =
     go . Seq.singleton =<< pEmphLinkDelim
   where
-    go :: Seq Token -> Parser (Seq Token)
+    go :: DelimStack -> Parser (DelimStack)
     go ds = (go =<< step)
         <|> (ds <$ endOfInput)
       where
@@ -279,7 +279,7 @@ pEmphTokens opts =
               <&> addInlines ds
           ]
 
-    lookForLinkOrImage :: Seq Token -> Parser (Seq Token)
+    lookForLinkOrImage :: DelimStack -> Parser (DelimStack)
     lookForLinkOrImage ds =
       case Seq.findr isLinkOpener ds of
         Nothing -> pure (addInline ds closer)
@@ -318,10 +318,10 @@ pEmphLink :: ParserOptions -> Parser (Inlines Text)
 pEmphLink opts =
   foldMap unToken . processEmphTokens <$> pEmphTokens opts
 
-processEmphTokens :: Seq Token -> Seq Token
+processEmphTokens :: DelimStack -> DelimStack
 processEmphTokens = Seq.reverse . foldl (flip processEmphToken) Seq.empty
 
-processEmphToken :: Token -> Seq Token -> Seq Token
+processEmphToken :: Token -> DelimStack -> DelimStack
 processEmphToken closing@EmphDelimToken{} stack
   | dCanOpen closing && not (dCanClose closing) = closing <| stack
   | dCanClose closing =
@@ -343,7 +343,7 @@ processEmphToken closing@EmphDelimToken{} stack
 processEmphToken inline@InlineToken{} stack = inline <| stack
 processEmphToken lo@LinkOpenToken{} stack = processEmphToken (InlineToken (unToken lo)) stack
 
-matchEmphStrings :: Seq Token -> Token -> Token -> Inlines Text -> Seq Token
+matchEmphStrings :: DelimStack -> Token -> Token -> Inlines Text -> DelimStack
 matchEmphStrings stack opening closing content
   | dChar opening == dChar closing = if
      | dLength closing == dLength opening ->
