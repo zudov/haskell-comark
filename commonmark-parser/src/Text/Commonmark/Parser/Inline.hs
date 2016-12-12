@@ -240,7 +240,7 @@ pEmphDelimToken indicator@(indicatorChar -> c) = do
         canClose =
           isRight && (isAsterisk indicator || not isLeft || followedByPunctuation)
 
-    pure $ EmphDelimToken indicator (Text.length delim) canOpen canClose
+    pure $ EmphDelimToken $ EmphDelim indicator (Text.length delim) canOpen canClose
     where
         check :: Maybe Char -> Maybe Char -> Bool
         check a b = fromMaybe False (not . isUnicodeWhitespace <$> a) &&
@@ -253,7 +253,7 @@ pLinkOpener = do
   openerType <- option LinkOpener (ImageOpener <$ char '!')
   lbl <- optional (lookAhead pLinkLabel)
   _ <- char '['
-  pure $ LinkOpenToken openerType True lbl mempty
+  pure $ LinkOpenToken $ LinkOpen openerType True lbl mempty
 
 pEmphLinkDelim :: Parser Token
 pEmphLinkDelim = asum
@@ -281,22 +281,25 @@ pEmphTokens opts =
     lookForLinkOrImage ds =
       case Seq.findr isLinkOpener ds of
         Nothing -> pure (addInline ds closer)
-        Just (suffix, opener, prefix) ->
+        Just (suffix, LinkOpenToken opener, prefix) ->
           option fallback $ do
-            guard (active opener)
+            guard (linkActive opener)
             addInlines (deactivating prefix) <$> pLink
           where
-            fallback = addInlines prefix (unToken opener)
+            fallback = addInlines prefix (unLinkOpen opener)
                          <> addInline suffix closer
-            constr = case openerType opener of
+            constr = case linkOpenerType opener of
                        LinkOpener  -> Link
                        ImageOpener -> Image
-            deactivating = case openerType opener of
+            deactivating = case linkOpenerType opener of
                              LinkOpener -> fmap deactivate
                              ImageOpener -> id
-            linkContent = foldMap unToken $ processEmphTokens (InlineToken (content opener) <| suffix)
-            pLink = pInlineLink constr linkContent
-                <|> pReferenceLink constr linkContent (refLabel opener)
+            content = foldMap unToken $ processEmphTokens (InlineToken (linkContent opener) <| suffix)
+            pLink = pInlineLink constr content
+                <|> pReferenceLink constr content (linkLabel opener)
+        Just (_, _, _) ->
+          error "lookForLinkOrImage: impossible happened. expected LinkOpenToken"
+
       where
         closer = Str "]"
 
@@ -320,39 +323,50 @@ processEmphTokens :: DelimStack -> DelimStack
 processEmphTokens = Seq.reverse . foldl (flip processEmphToken) Seq.empty
 
 processEmphToken :: Token -> DelimStack -> DelimStack
-processEmphToken closing@EmphDelimToken{} stack
-  | dCanOpen closing && not (dCanClose closing) = closing <| stack
-  | dCanClose closing =
-      case Seq.findl (matchOpening (dChar closing)) stack of
+processEmphToken (EmphDelimToken closing) stack
+  | emphCanOpen closing && not (emphCanClose closing) =
+      EmphDelimToken closing <| stack
+  | emphCanClose closing =
+      case Seq.findl (matchOpening (emphIndicator closing)) stack of
         Nothing
-          | dCanOpen closing -> closing <| stack
-          | otherwise -> (InlineToken $ unToken closing) <| stack
+          | emphCanClose closing ->
+              EmphDelimToken closing <| stack
+          | otherwise ->
+              InlineToken (unEmphDelim closing) <| stack
         Just (viewl -> EmptyL, _, _) -> stack
-        Just (content, opening, rest)
-          | dCanOpen closing && ((dLength opening + dLength closing) `mod` 3) == 0 ->
-              closing <| stack
+        Just (content, EmphDelimToken opening, rest)
+          | emphCanOpen closing && ((emphLength opening + emphLength closing) `mod` 3) == 0 ->
+              EmphDelimToken closing <| stack
           | otherwise ->
               matchEmphStrings rest opening closing
                 (foldMap unToken $ Seq.reverse content)
-  | otherwise = InlineToken (unToken closing) <| stack
+        Just (_, _, _) ->
+          error "processEmphToken: Impossible happened. Expected EmphDelimToken"
+  | otherwise =
+      InlineToken (unEmphDelim closing) <| stack
   where
-    matchOpening ch d = isEmphDelim d && dChar d == ch && dCanOpen d
+    matchOpening ch (EmphDelimToken d) = emphIndicator d == ch && emphCanOpen d
+    matchOpening _ _ = False
 
 processEmphToken inline@InlineToken{} stack = inline <| stack
 processEmphToken lo@LinkOpenToken{} stack = processEmphToken (InlineToken (unToken lo)) stack
 
-matchEmphStrings :: DelimStack -> Token -> Token -> Inlines Text -> DelimStack
+matchEmphStrings :: DelimStack -> EmphDelim -> EmphDelim -> Inlines Text -> DelimStack
 matchEmphStrings stack opening closing content
-  | dChar opening == dChar closing = if
-     | dLength closing == dLength opening ->
-         InlineToken (emph (dLength closing) content) <| stack
-     | dLength closing < dLength opening ->
-            InlineToken (emph (dLength closing) content)
-          <| opening {dLength = dLength opening - dLength closing}
-          <| stack
-     | dLength closing > dLength opening ->
-          processEmphToken (closing { dLength = dLength closing - dLength opening})
-                           (InlineToken (emph (dLength opening) content) <| stack)
+  | emphIndicator opening == emphIndicator closing = if
+     | emphLength closing == emphLength opening ->
+         InlineToken (emph (emphLength closing) content)
+           <| stack
+     | emphLength closing < emphLength opening ->
+         InlineToken (emph (emphLength closing) content)
+           <| EmphDelimToken opening
+                { emphLength = emphLength opening - emphLength closing }
+           <| stack
+     | emphLength closing > emphLength opening ->
+          processEmphToken
+            (EmphDelimToken closing
+               { emphLength = emphLength closing - emphLength opening})
+            (InlineToken (emph (emphLength opening) content) <| stack)
      | otherwise -> stack
   | otherwise = stack
 

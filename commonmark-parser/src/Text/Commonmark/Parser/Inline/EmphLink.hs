@@ -14,27 +14,48 @@ import Data.Sequence (Seq, ViewR (..), singleton, viewr, (<|), (><), (|>))
 
 type DelimStack = Seq Token
 
-data Token
-  = InlineToken (Inlines Text)
-  | EmphDelimToken
-      { dChar     :: EmphIndicator
-      , dLength   :: Int
-      , dCanOpen  :: Bool
-      , dCanClose :: Bool
-      }
-  | LinkOpenToken
-      { openerType :: OpenerType
-      , active     :: Bool
-      , refLabel   :: Maybe Text
-      , content    :: Inlines Text
+data EmphDelim
+  = EmphDelim
+      { emphIndicator :: EmphIndicator
+      , emphLength    :: Int
+      , emphCanOpen   :: Bool
+      , emphCanClose  :: Bool
       }
   deriving (Show, Eq)
 
+unEmphDelim :: EmphDelim -> Inlines Text
+unEmphDelim EmphDelim{..} =
+  singleton . Str
+    . Text.replicate emphLength
+    . Text.singleton . indicatorChar
+    $ emphIndicator
+
+data LinkOpen
+  = LinkOpen
+      { linkOpenerType :: OpenerType
+      , linkActive     :: Bool
+      , linkLabel      :: Maybe Text
+      , linkContent    :: Inlines Text
+      }
+  deriving (Show, Eq)
+
+unLinkOpen :: LinkOpen -> Inlines Text
+unLinkOpen l =
+  case linkOpenerType l of
+    LinkOpener -> Str "["
+    ImageOpener -> Str "!["
+   <| linkContent l
+
+data Token
+  = InlineToken (Inlines Text)
+  | EmphDelimToken EmphDelim
+  | LinkOpenToken LinkOpen
+  deriving (Show, Eq)
+
 unToken :: Token -> Inlines Text
-unToken (InlineToken is) = is
-unToken (EmphDelimToken{..}) = str $ Text.replicate dLength $ Text.singleton $ indicatorChar dChar
-unToken (LinkOpenToken LinkOpener _ _ c) = Str "[" <| c
-unToken (LinkOpenToken ImageOpener _ _ c) = Str "![" <| c
+unToken (InlineToken is)   = is
+unToken (EmphDelimToken e) = unEmphDelim e
+unToken (LinkOpenToken l)  = unLinkOpen l
 
 isLinkOpener :: Token -> Bool
 isLinkOpener LinkOpenToken{} = True
@@ -63,15 +84,23 @@ data OpenerType
   deriving (Show, Eq)
 
 deactivate :: Token -> Token
-deactivate t@LinkOpenToken{..} = t { active = openerType == ImageOpener }
+deactivate (LinkOpenToken l) =
+  LinkOpenToken l
+    { linkActive = linkOpenerType l == ImageOpener }
 deactivate t = t
 
 addInline :: Seq Token -> Inline Text -> Seq Token
-addInline (viewr -> ts :> ot@LinkOpenToken{}) i = ts |> ot { content = content ot |> i }
-addInline (viewr -> ts :> InlineToken is) i = ts |> InlineToken (is |> i)
-addInline ts i = ts |> InlineToken (singleton i)
+addInline (viewr -> ts :> LinkOpenToken l) i =
+  ts |> LinkOpenToken l
+          { linkContent = linkContent l |> i }
+addInline (viewr -> ts :> InlineToken is) i =
+  ts |> InlineToken (is |> i)
+addInline ts i =
+  ts |> InlineToken (singleton i)
 
 addInlines :: Seq Token -> Inlines Text -> Seq Token
-addInlines (viewr -> ts :> InlineToken is) i = ts |> InlineToken (is >< i)
-addInlines (viewr -> ts :> ot@LinkOpenToken{}) i = ts |> ot { content = content ot >< i }
+addInlines (viewr -> ts :> InlineToken is) i =
+  ts |> InlineToken (is >< i)
+addInlines (viewr -> ts :> LinkOpenToken l) i =
+  ts |> LinkOpenToken l { linkContent = linkContent l >< i }
 addInlines ts i = ts |> InlineToken i
