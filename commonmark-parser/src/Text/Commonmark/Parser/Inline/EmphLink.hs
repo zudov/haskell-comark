@@ -36,7 +36,11 @@ unToken (LinkOpenToken ImageOpener _ _ c) = Str "![" <| c
 
 isLinkOpener :: Token -> Bool
 isLinkOpener LinkOpenToken{} = True
-isLinkOpener _ = False
+isLinkOpener _               = False
+
+isEmphDelim :: Token -> Bool
+isEmphDelim EmphDelimToken{} = True
+isEmphDelim _                = False
 
 data EmphIndicator
   = AsteriskIndicator

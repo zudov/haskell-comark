@@ -338,8 +338,7 @@ processEmphToken closing@EmphDelimToken{} stack
                 (foldMap unToken $ Seq.reverse content)
   | otherwise = InlineToken (unToken closing) <| stack
   where
-    matchOpening ch d@EmphDelimToken{} = dChar d == ch && dCanOpen d
-    matchOpening _ _ = False
+    matchOpening ch d = isEmphDelim d && dChar d == ch && dCanOpen d
 
 processEmphToken inline@InlineToken{} stack = inline <| stack
 processEmphToken lo@LinkOpenToken{} stack = processEmphToken (InlineToken (unToken lo)) stack
