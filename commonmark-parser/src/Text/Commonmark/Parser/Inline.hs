@@ -235,14 +235,12 @@ pEmphDelimToken indicator@(indicatorChar -> c) = do
         isRight = check preceded followed
         precededByPunctuation = fromMaybe False (isPunctuation <$> preceded)
         followedByPunctuation = fromMaybe False (isPunctuation <$> followed)
-    pure $ case indicator of
-      AsteriskIndicator ->
-        EmphDelimToken AsteriskIndicator (Text.length delim) isLeft isRight
+        canOpen =
+          isLeft && (isAsterisk indicator || not isRight || precededByPunctuation)
+        canClose =
+          isRight && (isAsterisk indicator || not isLeft || followedByPunctuation)
 
-      UnderscoreIndicator ->
-        EmphDelimToken UnderscoreIndicator (Text.length delim)
-          (isLeft && (not isRight || precededByPunctuation))
-          (isRight && (not isLeft || followedByPunctuation))
+    pure $ EmphDelimToken indicator (Text.length delim) canOpen canClose
     where
         check :: Maybe Char -> Maybe Char -> Bool
         check a b = fromMaybe False (not . isUnicodeWhitespace <$> a) &&
@@ -264,11 +262,11 @@ pEmphLinkDelim = asum
   , pLinkOpener
   ]
 
-pEmphTokens :: ParserOptions -> Parser (DelimStack)
+pEmphTokens :: ParserOptions -> Parser DelimStack
 pEmphTokens opts =
     go . Seq.singleton =<< pEmphLinkDelim
   where
-    go :: DelimStack -> Parser (DelimStack)
+    go :: DelimStack -> Parser DelimStack
     go ds = (go =<< step)
         <|> (ds <$ endOfInput)
       where
@@ -279,7 +277,7 @@ pEmphTokens opts =
               <&> addInlines ds
           ]
 
-    lookForLinkOrImage :: DelimStack -> Parser (DelimStack)
+    lookForLinkOrImage :: DelimStack -> Parser DelimStack
     lookForLinkOrImage ds =
       case Seq.findr isLinkOpener ds of
         Nothing -> pure (addInline ds closer)
