@@ -38,9 +38,6 @@ import Text.Commonmark.Syntax.Builder
 import Text.Html.Email.Validate
 import Text.Html.Entity
 
-(<&>) :: Functor f => f a -> (a -> b) -> f b
-(<&>) = flip fmap
-
 parseInlines :: ParserOptions -> Text -> Inlines Text
 parseInlines opts t = normalization $
         case parse (msum <$> many (pInline opts) <* endOfInput) t of
