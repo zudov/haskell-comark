@@ -112,10 +112,9 @@ install:
 - if [ -f configure.ac ]; then autoreconf -i; fi
 - |
   set -ex
-  ./spec/test/spec_tests.py -s spec/spec.txt --dump-tests > ./commonmark-testutils/spec.json
   case "$BUILD" in
     stack)
-      stack --no-terminal --install-ghc $ARGS test --only-dependencies
+      stack --no-terminal --install-ghc $ARGS build --only-dependencies
       ;;
     cabal)
       cabal --version
@@ -128,9 +127,11 @@ install:
 script:
 - |
   set -ex
+  ./spec/test/spec_tests.py -s spec/spec.txt --dump-tests > ./commonmark-testutils/spec.json
   case "$BUILD" in
     stack)
-      stack --no-terminal $ARGS test --haddock --no-haddock-deps
+      stack --no-terminal $ARGS build --haddock --no-haddock-deps
+      stack --no-terminal $ARGS test
       ;;
     cabal)
       cabal install --enable-tests --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
