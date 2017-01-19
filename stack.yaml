@@ -8,7 +8,7 @@ packages:
       extra-dep: true
     - location:
         git: https://github.com/zudov/cmark-hs.git
-        commit: 53f2f4b98941bb9da9c5d46ddbba03a20316f90d
+        commit: f173bfc59da832f2298f8e7ad255b82a0af4925a
       extra-dep: true
 
 extra-deps:

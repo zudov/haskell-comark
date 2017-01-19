@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.15.0.
+-- This file has been generated from package.yaml by hpack version 0.16.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -18,7 +18,7 @@ cabal-version:       >= 1.10
 library
   hs-source-dirs:
       src/
-    , extended/
+      extended/
   exposed-modules:
       Text.Commonmark.Parser
       Text.Commonmark.Parser.Options
