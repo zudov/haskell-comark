@@ -372,23 +372,21 @@ matchEmphStrings stack opening closing content
   | otherwise = stack
 
 emph :: Int -> Inlines Text -> Inlines Text
-emph 1 content = single Emph content
-emph 2 content = single Strong content
 emph n content
+  | n <= 0    = content
   | even n    = single Strong $ emph (n - 2) content
   | otherwise = single Emph   $ emph (n - 1) content
-
--- singleton sequence or empty if contents are empty
-single :: (Inlines a -> Inline a) -> Inlines a -> Inlines a
-single constructor ils | Seq.null ils = mempty
-                       | otherwise    = singleton (constructor ils)
+  where
+   single f is =
+     f is <$ guard (not $ Seq.null is)
 
 pLinkLabel :: Parser Text
 pLinkLabel = char '[' *> (Text.concat <$> someTill chunk (char ']'))
-  where chunk = regChunk <|> bracketChunk <|> backslashChunk
-        regChunk = takeWhile1 (`notElem` ("[]\\" :: [Char]))
-        bracketChunk = char '\\' *> ("[" <|> "]")
-        backslashChunk = "\\\\"
+  where
+    chunk          = regChunk <|> bracketChunk <|> backslashChunk
+    regChunk       = takeWhile1 (`notElem` ("[]\\" :: [Char]))
+    bracketChunk   = char '\\' *> ("[" <|> "]")
+    backslashChunk = "\\\\"
 
 pLinkDest :: Parser Text
 pLinkDest =
