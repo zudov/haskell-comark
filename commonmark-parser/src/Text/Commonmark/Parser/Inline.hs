@@ -369,7 +369,9 @@ matchEmphStrings stack opening closing content
 emph :: Int -> Inlines Text -> Inlines Text
 emph 1 content = single Emph content
 emph 2 content = single Strong content
-emph n content = single Strong $ emph (n - 2) content
+emph n content
+  | even n    = single Strong $ emph (n - 2) content
+  | otherwise = single Emph   $ emph (n - 1) content
 
 -- singleton sequence or empty if contents are empty
 single :: (Inlines a -> Inline a) -> Inlines a -> Inlines a
