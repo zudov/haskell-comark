@@ -386,45 +386,66 @@ pLinkLabel = char '[' *> (Text.concat <$> someTill chunk (char ']'))
         backslashChunk = "\\\\"
 
 pLinkDest :: Parser Text
-pLinkDest = do
-  inPointy <- (True <$ char '<') <|> pure False
-  if inPointy
-     then Text.pack <$> manyTill (pSatisfy (`notElem` ("\r\n " :: [Char]))) (char '>')
-     else Text.concat <$> some (regChunk <|> parenChunk)
-  where regChunk = takeWhile1 (notInClass " \n\r()\\&" <&&> (not . isControl))
-                <|> pEntityText <|> pBackslashedChar
-        parenChunk = parenthesize . Text.concat <$> (char '(' *>
-                       manyTill regChunk (char ')'))
+pLinkDest =
+  pointy <|> nonPointy
+  where
+    pointy = char '<' *> (Text.concat <$> many chunk) <* char '>'
+      where
+        chunk = asum
+          [ takeWhile1 (`notElem` [' ', '\r', '\n', '>', '<', '\\'])
+          , Text.singleton <$> pSatisfy (`notElem` [' ', '\r', '\n', '>', '<'])
+          ]
+    nonPointy = Text.concat <$> some chunk
+      where
+        chunk = asum
+          [ takeWhile1 (notInClass " ()\\&" <&&> not . isControl)
+          , pEntityText
+          , pBackslashedChar
+          , parenthesize . Text.concat <$> do
+              char '('
+              manyTill chunk (char ')')
+          ]
 
 pLinkTitle :: Parser Text
 pLinkTitle = surroundedWith ("('\"'" :: [Char])
-    where surroundedWith openers = do
-              opener <- satisfy (`elem` openers)
-              let ender = if opener == '(' then ')' else opener
-                  pEnder = char ender <* notFollowedBy (skip isAlphaNum)
-                  regChunk = takeWhile1 ((/= ender) <&&> (/= '\\') <&&> (/= '&'))
-                          <|> pEntityText <|> "&" <|> pBackslashedChar
-                  nestedChunk = parenthesize <$> surroundedWith "("
-              Text.concat <$> manyTill (regChunk <|> nestedChunk) pEnder
+  where
+    surroundedWith openers = do
+      opener <- satisfy (`elem` openers)
+      let ender = if opener == '(' then ')' else opener
+          pEnder = char ender <* notFollowedBy (skip isAlphaNum)
+          regChunk = asum
+            [ takeWhile1 ((/= ender) <&&> (/= '\\') <&&> (/= '&'))
+            , pEntityText
+            , "&"
+            , pBackslashedChar
+            ]
+          nestedChunk = parenthesize <$> surroundedWith "("
+      Text.concat <$> manyTill (regChunk <|> nestedChunk) pEnder
 
 pReference :: Parser (Text, Text, Maybe Text)
 pReference = do
-    lab <- pLinkLabel <* char ':'
-    guard $ isJust $ Text.find (not . isWhitespace) lab
-    scanWhitespaceNL
-    url <- pLinkDest <* skipWhile whitespaceNoNL
-    titleOnNewLine <- isJust <$> optional pLineEnding
-    skipWhile whitespaceNoNL
-    title <- if titleOnNewLine
-             then optional (pLinkTitle <* skipWhile whitespaceNoNL
-                                       <* (endOfInput <|> void pLineEnding))
-             else optional pLinkTitle <* skipWhile whitespaceNoNL
-                                      <* (endOfInput <|> void pLineEnding)
-    pure (lab, url, title)
+  lab <- pLinkLabel <* char ':'
+  guard $ isJust $ Text.find (not . isWhitespace) lab
+  scanWhitespaceNL
+  url <- pLinkDest <* skipWhile whitespaceNoNL
+  titleOnNewLine <- isJust <$> optional pLineEnding
+  skipWhile whitespaceNoNL
+  title <-
+    if titleOnNewLine
+    then optional $
+           pLinkTitle <* do
+             skipWhile whitespaceNoNL
+             endOfInput <|> void pLineEnding
+    else optional pLinkTitle <* do
+           skipWhile whitespaceNoNL
+           endOfInput <|> void pLineEnding
+  pure (lab, url, title)
   where
     -- | optional scanWhitespace (including up to one line ending)
-    scanWhitespaceNL = skipWhile whitespaceNoNL
-                    *> optional pLineEnding
-                    *> skipWhile whitespaceNoNL
-    whitespaceNoNL = isWhitespace <&&> not . isLineEnding
+    scanWhitespaceNL = do
+      skipWhile whitespaceNoNL
+      optional pLineEnding
+      skipWhile whitespaceNoNL
+    whitespaceNoNL =
+      isWhitespace <&&> not . isLineEnding
 
