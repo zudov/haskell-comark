@@ -26,6 +26,18 @@ library:
   exposed-modules:
   - Text.Commonmark.Parser
   - Text.Commonmark.Parser.Options
+  other-modules:
+  - Text.Commonmark.Parser.Inline
+  - Text.Commonmark.Parser.Inline.EmphLink
+  - Text.Commonmark.Parser.Util
+  - Text.Commonmark.ParserCombinators
+  - Text.Commonmark.ParserCombinators.Prim
+  - Text.Commonmark.Types
+  - Text.Html.Email.Validate
+  - Data.Char.Extended
+  - Data.Sequence.Extended
+  - Data.Text.Extended
+  - Paths_commonmark_parser
   dependencies:
   - base >=4.7 && <5.0
   - html5-entity >=0.2.0.1
