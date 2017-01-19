@@ -19,6 +19,7 @@ import           Control.Bool
 import           Control.Monad          hiding (mapM_)
 import           Data.Char.Extended
 import           Data.Foldable          (asum)
+import           Data.List              (foldl')
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Sequence          (ViewL (..), singleton, viewl, (<|),
@@ -316,53 +317,57 @@ pEmphLink opts =
   foldMap unToken . processEmphTokens <$> pEmphTokens opts
 
 processEmphTokens :: DelimStack -> DelimStack
-processEmphTokens = Seq.reverse . foldl (flip processEmphToken) Seq.empty
+processEmphTokens = foldl' processEmphToken Seq.empty
 
-processEmphToken :: Token -> DelimStack -> DelimStack
-processEmphToken (EmphDelimToken closing) stack
-  | emphCanOpen closing && not (emphCanClose closing) =
-      EmphDelimToken closing <| stack
-  | emphCanClose closing =
-      case Seq.findl (matchOpening (emphIndicator closing)) stack of
+processEmphToken :: DelimStack -> Token -> DelimStack
+processEmphToken stack token =
+  case token of
+    InlineToken{} ->
+      stack |> token
+    LinkOpenToken{} ->
+      processEmphToken stack (InlineToken $ unToken token)
+    EmphDelimToken closing
+      | emphCanOpen closing && not (emphCanClose closing) ->
+          stack |> EmphDelimToken closing
+      | emphCanClose closing ->
+      case Seq.findr (matchOpening (emphIndicator closing)) stack of
         Nothing
           | emphCanClose closing ->
-              EmphDelimToken closing <| stack
+              stack |> EmphDelimToken closing
           | otherwise ->
-              InlineToken (unEmphDelim closing) <| stack
+              stack |> InlineToken (unEmphDelim closing)
         Just (viewl -> EmptyL, _, _) -> stack
         Just (content, EmphDelimToken opening, rest)
           | emphCanOpen closing && ((emphLength opening + emphLength closing) `mod` 3) == 0 ->
-              EmphDelimToken closing <| stack
+              stack |> EmphDelimToken closing
           | otherwise ->
               matchEmphStrings rest opening closing
-                (foldMap unToken $ Seq.reverse content)
+                (foldMap unToken content)
         Just (_, _, _) ->
           error "processEmphToken: Impossible happened. Expected EmphDelimToken"
-  | otherwise =
-      InlineToken (unEmphDelim closing) <| stack
+      | otherwise ->
+         stack |> InlineToken (unEmphDelim closing)
   where
     matchOpening ch (EmphDelimToken d) = emphIndicator d == ch && emphCanOpen d
     matchOpening _ _ = False
-
-processEmphToken inline@InlineToken{} stack = inline <| stack
-processEmphToken lo@LinkOpenToken{} stack = processEmphToken (InlineToken (unToken lo)) stack
 
 matchEmphStrings :: DelimStack -> EmphDelim -> EmphDelim -> Inlines Text -> DelimStack
 matchEmphStrings stack opening closing content
   | emphIndicator opening == emphIndicator closing = if
      | emphLength closing == emphLength opening ->
-         InlineToken (emph (emphLength closing) content)
-           <| stack
+         stack
+           |> InlineToken (emph (emphLength closing) content)
      | emphLength closing < emphLength opening ->
-         InlineToken (emph (emphLength closing) content)
-           <| EmphDelimToken opening
+         stack
+           |> EmphDelimToken opening
                 { emphLength = emphLength opening - emphLength closing }
-           <| stack
+
+           |> InlineToken (emph (emphLength closing) content)
      | emphLength closing > emphLength opening ->
           processEmphToken
+            (stack |> InlineToken (emph (emphLength opening) content))
             (EmphDelimToken closing
                { emphLength = emphLength closing - emphLength opening})
-            (InlineToken (emph (emphLength opening) content) <| stack)
      | otherwise -> stack
   | otherwise = stack
 
