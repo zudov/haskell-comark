@@ -89,7 +89,7 @@ deactivate (LinkOpenToken l) =
     { linkActive = linkOpenerType l == ImageOpener }
 deactivate t = t
 
-addInline :: Seq Token -> Inline Text -> Seq Token
+addInline :: DelimStack -> Inline Text -> DelimStack
 addInline (viewr -> ts :> LinkOpenToken l) i =
   ts |> LinkOpenToken l
           { linkContent = linkContent l |> i }
@@ -98,7 +98,7 @@ addInline (viewr -> ts :> InlineToken is) i =
 addInline ts i =
   ts |> InlineToken (singleton i)
 
-addInlines :: Seq Token -> Inlines Text -> Seq Token
+addInlines :: DelimStack -> Inlines Text -> DelimStack
 addInlines (viewr -> ts :> InlineToken is) i =
   ts |> InlineToken (is >< i)
 addInlines (viewr -> ts :> LinkOpenToken l) i =
