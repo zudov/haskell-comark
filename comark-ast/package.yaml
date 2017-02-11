@@ -1,0 +1,22 @@
+name: comark-ast
+version: '0.1.0'
+synopsis: Definitions of AST that represents a Commonmark (markdown) document.
+description: See <https://github.com/zudov/haskell-comark#readme README>
+category: Text
+author: Konstantin Zudov
+maintainer: co@zudov.me
+copyright: (c) Konstantin Zudov, 2014, 2015, 2016
+license: BSD3
+other-extensions:
+- DeriveDataTypeable
+- DeriveGeneric
+dependencies:
+- base >=4.7 && <5.0
+- containers
+- deepseq
+library:
+  source-dirs: src/
+  ghc-options: -Wall
+  exposed-modules:
+  - Comark.Syntax
+  - Comark.Syntax.Builder

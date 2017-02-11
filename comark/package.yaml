@@ -1,0 +1,31 @@
+name: comark
+version: '0.1.0'
+synopsis: Commonmark processing in pure haskell.
+description: See <https://github.com/zudov/haskell-comark#readme README>
+category: Text
+author: Konstantin Zudov
+maintainer: co@zudov.me
+copyright: (c) Konstantin Zudov, 2014, 2015, 2016
+license: BSD3
+dependencies:
+  - base >=4.7 && <5
+  - text
+
+library:
+  source-dirs: src
+  ghc-options: -Wall
+  exposed-modules:
+    - Comark
+  dependencies:
+    - comark-ast
+    - comark-parser
+    - comark-html
+executables:
+  comark-hs:
+    main: Main.hs
+    source-dirs: ./.
+    ghc-options:
+      - -Wall
+      - -threaded
+    dependencies:
+      - comark

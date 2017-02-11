@@ -1,20 +1,20 @@
-# haskell-commonmark
+# haskell-comark
 
-[![Build Status](https://travis-ci.org/zudov/haskell-commonmark.svg?branch=master)](https://travis-ci.org/zudov/haskell-commonmark)
+[![Build Status](https://travis-ci.org/zudov/haskell-comark.svg?branch=master)](https://travis-ci.org/zudov/haskell-comark)
 
-[![commonmark on Hackage](https://img.shields.io/hackage/v/commonmark.svg)](http://hackage.haskell.org/package/commonmark)
+[![comark on Hackage](https://img.shields.io/hackage/v/comark.svg)](http://hackage.haskell.org/package/comark)
 
-[![commonmark on Stackage LTS 2](http://stackage.org/package/commonmark/badge/lts-2)](http://stackage.org/lts-2/package/commonmark)
-[![commonmark on Stackage LTS 3](http://stackage.org/package/commonmark/badge/lts-3)](http://stackage.org/lts-3/package/commonmark)
-[![commonmark on Stackage Nightly](http://stackage.org/package/commonmark/badge/nightly)](http://stackage.org/nightly/package/commonmark)
+[![comark on Stackage LTS 2](http://stackage.org/package/comark/badge/lts-2)](http://stackage.org/lts-2/package/comark)
+[![comark on Stackage LTS 3](http://stackage.org/package/comark/badge/lts-3)](http://stackage.org/lts-3/package/comark)
+[![comark on Stackage Nightly](http://stackage.org/package/comark/badge/nightly)](http://stackage.org/nightly/package/comark)
 
 The functionality is split across several libraries which are contained in this
 repo:
 
-- **commonmark-ast** -- definition of CommonMark's AST;
-- **commonmark-parser** -- responsible for parsing into the AST;
-- **commonmark-html** -- responsible for rendering of AST into html;
-- **commonmark-testutils** -- utilities for testing these packages.
+- **comark-ast**       -- definition of Commonmark's AST;
+- **comark-parser**    -- parsing commonmark text and producing AST
+- **comark-html**      -- rendering commonmark's AST into HTML
+- **comark-testutils** -- utilities for testing these packages.
 
 # TODO
 
@@ -29,16 +29,16 @@ repo:
 - [ ] Add to hackage and stackage.
 - [X] Document things up.
 - [ ] Extend ecosystem with additional libraries that ease the integration
-      (commonmark-blaze, commonmark-lucid, commonmark-json)
+      (comark-blaze, comark-lucid, comark-json)
 - [ ] Add helpers for processing/walking the AST and examples of typical manipulations.
 - [ ] Work on extensibility.
 - [ ] Compile with ghcjs. If performance/size isn't great, consider making bindings to
-      `commonmark.js` but provide `commonmark-ast` based interface.
+      `commonmark.js` but provide `comark-ast` based interface.
 
 # License
 
 This library is released under BSD-3-Clause license. See LICENSE for terms and copyright notice.
 
-Custom parser combinators and CommonMark block structure parser are largely based on the ones found
+Custom parser combinators and block structure parser are largely based on the ones found
 in [Cheapskate](https://github.com/jgm/cheapskate) (Copyright © 2012, 2013, 2014 John MacFarlane).
 
