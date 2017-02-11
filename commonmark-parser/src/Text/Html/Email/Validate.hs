@@ -10,7 +10,7 @@ import qualified Data.Text                         as Text
 import           Text.Commonmark.ParserCombinators
 
 isValidEmail :: Text -> Bool
-isValidEmail = isRight . parse (scanEmail *> endOfInput)
+isValidEmail = isRight . runParser (scanEmail *> endOfInput)
 
 scanEmail :: Parser ()
 scanEmail = local *> char '@' *> domain

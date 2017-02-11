@@ -1,16 +1,20 @@
 {-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE ViewPatterns        #-}
 module Text.Commonmark.Parser
-  ( commonmarkToDoc ) where
+  ( parse
+  , ParserOption(..)
+  ) where
 
 import Prelude hiding (takeWhile)
 
 import           Control.Applicative
+import           Control.Arrow                  (second)
 import           Control.Bool
 import           Control.Monad
 import           Control.Monad.Trans.RWS.Strict
@@ -40,12 +44,14 @@ import Text.Commonmark.Types
 --
 --   At the moment no sanitizations are performed besides the ones defined
 --   in the spec.
-commonmarkToDoc :: [ParserOption] -> Text -> Doc Text
-commonmarkToDoc (parserOptions -> opts) text = Doc $ processDocument (cont, opts')
-    where (cont, refmap) = processLines text
-          opts' = opts { poLinkReferences
-                            = liftA2 (<|>) (poLinkReferences opts)
-                                           (lookupLinkReference refmap) }
+parse :: [ParserOption] -> Text -> Doc Text
+parse (parserOptions -> opts) text =
+  Doc $ processDocument
+      $ second extendRefmap
+      $ processLines text
+  where
+    extendRefmap refmap =
+      opts { _poLinkReferences = lookupLinkReference refmap }
 
 -- General parsing strategy:
 --
@@ -74,7 +80,11 @@ commonmarkToDoc (parserOptions -> opts) text = Doc $ processDocument (cont, opts
 --------
 
 -- Container stack definitions:
-data ContainerStack = ContainerStack Container {- top -} [Container] {- rest -}
+data ContainerStack
+  = ContainerStack
+      { csTop  :: Container
+      , csRest :: [Container]
+      }
 
 type LineNumber = Int
 
@@ -82,23 +92,28 @@ data Elt = C Container
          | L LineNumber Leaf
          deriving (Show)
 
-data Container = Container { containerType :: ContainerType
-                           , children      :: Seq Elt
-                           }
+data Container =
+  Container
+    { containerType     :: ContainerType
+    , containerChildren :: Seq Elt
+    }
 
-data ContainerType = Document
-                   | BlockQuote
-                   | ListItem { padding  :: Int
-                              , itemType :: ListType
-                              }
-                   | FencedCode { startColumn :: Int
-                                , fence       :: Text
-                                , info        :: Maybe Text
-                                }
-                   | IndentedCode
-                   | RawHtmlBlock Condition
-                   | Reference
-                   deriving (Show, Eq)
+data ContainerType
+  = Document
+  | BlockQuote
+  | ListItem
+      { liPadding :: Int
+      , liType    :: ListType
+      }
+  | FencedCode
+      { codeStartColumn :: Int
+      , codeFence       :: Text
+      , codeInfo        :: Maybe Text
+      }
+  | IndentedCode
+  | RawHtmlBlock Condition
+  | Reference
+  deriving (Show, Eq)
 
 isIndentedCode :: Elt -> Bool
 isIndentedCode (C (Container IndentedCode _)) = True
@@ -106,36 +121,38 @@ isIndentedCode _                              = False
 
 isBlankLine :: Elt -> Bool
 isBlankLine (L _ BlankLine{}) = True
-isBlankLine _ = False
+isBlankLine _                 = False
 
 isTextLine :: Elt -> Bool
 isTextLine (L _ (TextLine _)) = True
-isTextLine _ = False
+isTextLine _                  = False
 
 isListItem :: ContainerType -> Bool
 isListItem ListItem{} = True
-isListItem _ = False
+isListItem _          = False
 
 instance Show Container where
-    show c = show (containerType c) ++ "\n" ++
-                nest 2 (intercalate "\n" (map pptElt $ toList $ children c))
+    show c = mconcat
+      [ show (containerType c), "\n"
+      , nest 2 (intercalate "\n" $ map pptElt $ toList $ containerChildren c)
+      ]
 
 nest :: Int -> String -> String
-nest num = intercalate "\n" . map (replicate num ' ' ++) . lines
+nest num = intercalate "\n" . map (replicate num ' ' <>) . lines
 
 pptElt :: Elt -> String
-pptElt (C c) = show c
+pptElt (C c)              = show c
 pptElt (L _ (TextLine s)) = show s
-pptElt (L _ lf) = show lf
+pptElt (L _ lf)           = show lf
 
--- Scanners that must be satisfied if the current open container is to be
--- continued on a new line (ignoring lazy continuations).
+-- | Scanners that must be satisfied if the current open container is to be
+--   continued on a new line (ignoring lazy continuations).
 containerContinue :: Container -> Scanner
 containerContinue c = case containerType c of
     BlockQuote     -> pNonIndentSpaces *> scanBlockquoteStart
     IndentedCode   -> void pIndentSpaces
-    FencedCode{..} -> void (pSpacesUpToColumn startColumn)
-    ListItem{..}   -> void pBlankline <|> (tabCrusher *> replicateM_ padding (char ' '))
+    FencedCode{..} -> void $ pSpacesUpToColumn codeStartColumn
+    ListItem{..}   -> void pBlankline <|> (tabCrusher *> replicateM_ liPadding (char ' '))
     -- TODO: This is likely to be incorrect behaviour. Check.
     Reference -> notFollowedBy
       (void pBlankline
@@ -145,7 +162,7 @@ containerContinue c = case containerType c of
     _ -> pure ()
 {-# INLINE containerContinue #-}
 
--- Defines parsers that open new containers.
+-- | Defines parsers that open new containers.
 containerStart :: Bool -> Bool -> Parser ContainerType
 containerStart afterListItem lastLineIsText = asum
     [ pNonIndentSpaces
@@ -154,8 +171,8 @@ containerStart afterListItem lastLineIsText = asum
     , parseListMarker afterListItem lastLineIsText
     ]
 
--- Defines parsers that open new verbatim containers (containers
--- that take only TextLine and BlankLine as children).
+-- | Defines parsers that open new verbatim containers (containers
+--   that take only TextLine and BlankLine as children).
 verbatimContainerStart :: Bool -> Parser ContainerType
 verbatimContainerStart lastLineIsText = asum
    [ pNonIndentSpaces *> parseCodeFence
@@ -167,80 +184,91 @@ verbatimContainerStart lastLineIsText = asum
    , guard (not lastLineIsText) *> pNonIndentSpaces *> (Reference <$ scanReference)
    ]
 
--- Leaves of the container structure (they don't take children).
+-- | Leaves of the container structure (they don't take children).
 type Leaf = GenLeaf Text
-data GenLeaf t = TextLine         t
-               | BlankLine        t
-               | ATXHeading    HeadingLevel t
-               | SetextHeading HeadingLevel t
-               | SetextToken   HeadingLevel t
-               | Rule
-               deriving (Show, Functor)
+
+data GenLeaf t
+  = TextLine         t
+  | BlankLine        t
+  | ATXHeading    HeadingLevel t
+  | SetextHeading HeadingLevel t
+  | SetextToken   HeadingLevel t
+  | Rule
+  deriving (Show, Functor)
 
 type ContainerM = RWS () ReferenceMap ContainerStack
 
--- Close the whole container stack, leaving only the root Document container.
+-- | Close the whole container stack, leaving only the root Document container.
 closeStack :: ContainerM Container
-closeStack = get >>= \case ContainerStack top [] -> return top
-                           ContainerStack _ _    -> closeContainer >> closeStack
+closeStack =
+  get >>= \case
+    ContainerStack top [] -> pure top
+    ContainerStack _ _    -> closeContainer *> closeStack
 
 -- Close the top container on the stack.  If the container is a Reference
 -- container, attempt to parse the reference and update the reference map.
 -- If it is a list item container, move a final BlankLine outside the list
 -- item.
 closeContainer :: ContainerM ()
-closeContainer = do
-  ContainerStack top rest <- get
-  case top of
-    (Container Reference cs'') ->
-      case parse ((,) <$> pReference <*> untilTheEnd) (Text.strip $ Text.joinLines $ map extractText $ toList textlines) of
-           Right ((lab, lnk, tit), unconsumed) -> do
-             tell (Map.singleton (normalizeReference lab) (lnk, tit))
-             case rest of
-               (Container ct' cs' : rs)
-                 | Text.null unconsumed -> put $ ContainerStack (Container ct' (rest' <> cs' |> C top)) rs
-                 | otherwise         -> put $ ContainerStack (Container ct' ((L (-1) (TextLine unconsumed) <| rest') >< (cs' |> C top))) rs
-               [] -> return ()
-           Left _ ->
-             case rest of
-               (Container ct' cs' : rs) ->
-                   put $ ContainerStack (Container ct' (cs' <> cs'')) rs
-               [] -> return ()
-      where (textlines, rest') = Seq.spanl isTextLine cs''
-    (Container li@ListItem{} cs'') ->
-      case rest of
-        -- move final BlankLine outside of list item
-        (Container ct' cs' : rs) ->
-          case viewr cs'' of
-            (zs :> b) | isBlankLine b -> put $ ContainerStack (Container ct' els) rs
-                where els | null zs = cs' |> C (Container li zs)
-                          | otherwise   = cs' |> C (Container li zs) |> b
+closeContainer =
+  get >>= \case
+    ContainerStack top@(Container Reference cs'') rest ->
+      case runParser ((,) <$> pReference <*> untilTheEnd) input of
+        Right ((lab, lnk, tit), unconsumed) -> do
+          tell (Map.singleton (normalizeReference lab) (lnk, tit))
+          case rest of
+            (Container ct' cs' : rs)
+              | Text.null unconsumed ->
+                  put $ ContainerStack (Container ct' (rest' <> cs' |> C top)) rs
+              | otherwise ->
+                  let children = (L (-1) (TextLine unconsumed) <| rest') >< (cs' |> C top)
+                  in put $ ContainerStack (Container ct' children) rs
+            [] -> pure ()
+        Left _ ->
+          case rest of
+            (Container ct' cs' : rs) ->
+                put $ ContainerStack (Container ct' (cs' <> cs'')) rs
+            [] -> return ()
+      where
+        input = Text.strip $ Text.joinLines $ map extractText $ toList textlines
+        (textlines, rest') = Seq.spanl isTextLine cs''
 
-            _ -> put $ ContainerStack (Container ct' (cs' |> C top)) rs
-        [] -> return ()
-    _ -> case rest of
-          (Container ct' cs' : rs) ->
-              put $ ContainerStack (Container ct' (cs' |> C top)) rs
-          [] -> return ()
+    ContainerStack top rest
+      | Container li@ListItem{} (viewr -> zs :> b) <- top
+      , Container ct' cs' : rs <- rest
+      , isBlankLine b ->
+          let els = if null zs
+                    then cs' |> C (Container li zs)
+                    else cs' |> C (Container li zs) |> b
+          in put $ ContainerStack (Container ct' els) rs
+
+    ContainerStack top (Container ct' cs' : rs) ->
+      put $ ContainerStack (Container ct' (cs' |> C top)) rs
+
+    ContainerStack _ [] -> pure ()
 
 -- Add a leaf to the top container.
 addLeaf :: LineNumber -> Leaf -> ContainerM ()
 addLeaf lineNum lf = do
   ContainerStack top rest <- get
-  case (top, lf) of
-    (Container ct@(ListItem{}) cs, BlankLine{})
-       | (firstLine :< _) <- viewl cs -- two blanks break out of list item:
-       , isBlankLine firstLine ->
-           closeContainer *> addLeaf lineNum lf
-       | otherwise ->
-           put $ ContainerStack (Container ct (cs |> L lineNum lf)) rest
-    (Container ct cs, _) ->
-      put $ ContainerStack (Container ct (cs |> L lineNum lf)) rest
+  case containerType top of
+    ListItem{} -- two blanks break out of list item:
+      | (firstLine :< _) <- viewl $ containerChildren top
+      , BlankLine{} <- lf
+      , isBlankLine firstLine -> do
+          closeContainer
+          addLeaf lineNum lf
+    _ -> put $ ContainerStack
+                 (Container
+                   (containerType top)
+                   (containerChildren top |> L lineNum lf))
+               rest
 
 -- Add a container to the container stack.
 addContainer :: ContainerType -> ContainerM ()
-addContainer ct = modify $ \(ContainerStack top rest) ->
-                      ContainerStack (Container ct mempty) (top:rest)
+addContainer ct =
+  modify $ \ContainerStack{..} ->
+    ContainerStack (Container ct mempty) (csTop:csRest)
 
 -- Step 2
 
@@ -285,7 +313,7 @@ processElts opts (C (Container ct cs) : rest) =
     -- List item?  Gobble up following list items of the same type
     -- (skipping blank lines), determine whether the list is tight or
     -- loose, and generate a List.
-    ListItem { itemType = itemType } ->
+    ListItem { liType = itemType } ->
       List itemType isTight (Seq.fromList items') <| processElts opts rest'
         where
           xs = takeListItems rest
@@ -294,15 +322,15 @@ processElts opts (C (Container ct cs) : rest) =
 
           -- take list items as long as list type matches and we
           -- don't hit two blank lines:
-          takeListItems (c@(C (Container ListItem { itemType = lt } _)) : zs)
+          takeListItems (c@(C (Container ListItem { liType = lt } _)) : zs)
             | listTypesMatch lt itemType = c : takeListItems zs
-          takeListItems (lf@(L _ (BlankLine _)) : c@(C (Container ListItem { itemType = lt } _)) : zs)
+          takeListItems (lf@(L _ (BlankLine _)) : c@(C (Container ListItem { liType = lt } _)) : zs)
             | listTypesMatch lt itemType = lf : c : takeListItems zs
           takeListItems _ = []
 
-          listTypesMatch (Bullet c1) (Bullet c2) = c1 == c2
+          listTypesMatch (Bullet c1) (Bullet c2)       = c1 == c2
           listTypesMatch (Ordered w1 _) (Ordered w2 _) = w1 == w2
-          listTypesMatch _ _ = False
+          listTypesMatch _ _                           = False
 
           items = mapMaybe getItem (Container ct cs : [c | C c <- xs])
 
@@ -313,8 +341,8 @@ processElts opts (C (Container ct cs) : rest) =
 
           isTight = not (any isBlankLine xs) && all tightListItem items
 
-          tightListItem []  = True
-          tightListItem [_] = True
+          tightListItem []     = True
+          tightListItem [_]    = True
           tightListItem (_:is) = not $ any isBlankLine $ init is
 
     FencedCode _ _ info -> CodeBlock (parseInfoString <$> info)
@@ -347,7 +375,7 @@ processElts opts (C (Container ct cs) : rest) =
 
 extractText :: Elt -> Text
 extractText (L _ (TextLine t)) = t
-extractText _ = mempty
+extractText _                  = mempty
 
 -- Step 1
 
@@ -378,15 +406,20 @@ processLine (lineNumber, txt) = do
   -- the container type at the top of the stack (ct):
   case ct of
     -- If it's a verbatim line container, add the line.
-    RawHtmlBlock c | numUnmatched == 0 -> do
-      addLeaf lineNumber (TextLine t')
-      when (isRight $ parse (blockEnd c) t') $ closeContainer
-    IndentedCode   | numUnmatched == 0 -> addLeaf lineNumber (TextLine t')
-    FencedCode{ fence = fence' } | numUnmatched == 0 ->
-      if isRight $ parse scanClosing t'
-         -- closing code fence
-         then closeContainer
-         else addLeaf lineNumber (TextLine t')
+    RawHtmlBlock c
+      | numUnmatched == 0 -> do
+          addLeaf lineNumber (TextLine t')
+          when (isRight $ runParser (blockEnd c) t')
+            closeContainer
+    IndentedCode
+      | numUnmatched == 0 -> addLeaf lineNumber (TextLine t')
+    FencedCode { codeFence = fence' }
+      | numUnmatched == 0 -> if
+           -- closing code fence
+        | isRight $ runParser scanClosing t'
+            -> closeContainer
+        | otherwise
+            -> addLeaf lineNumber (TextLine t')
         where
           scanClosing = satisfyUpTo 3 (== ' ')
                      *> string fence' *> skipWhile (== Text.head fence')
@@ -395,71 +428,72 @@ processLine (lineNumber, txt) = do
 
 
     -- otherwise, parse the remainder to see if we have new container starts:
-    _ -> case tryNewContainers (isListItem ct) lastLineIsText (Text.length txt - Text.length t') t' of
+    _ -> let (verbatimContainers, leaf) =
+               tryNewContainers (isListItem ct) lastLineIsText (Text.length txt - Text.length t') t'
+         in case (Seq.viewl verbatimContainers, leaf) of
+              -- lazy continuation: text line, last line was text, no new containers,
+              -- some unmatched containers:
+              (Seq.EmptyL, TextLine t)
+                  | numUnmatched > 0
+                  , _ :> L _ TextLine{} <- viewr cs
+                  , ct /= IndentedCode
+                  -> addLeaf lineNumber (TextLine t)
 
-       -- lazy continuation: text line, last line was text, no new containers,
-       -- some unmatched containers:
-       ([], TextLine t)
-           | numUnmatched > 0
-           , _ :> L _ TextLine{} <- viewr cs
-           , ct /= IndentedCode
-           -> addLeaf lineNumber (TextLine t)
+              -- A special case: Lazy continuation of a list item looking like
+              -- indented code e.g:
+              -- "  1.  Paragraph"
+              -- "    with two lines"
+              (IndentedCode :< _, TextLine t)
+                  | numUnmatched > 0
+                  , _ :> L _ TextLine{} <- viewr cs
+                  , ListItem{} <- ct
+                  -> addLeaf lineNumber $ TextLine $ Text.strip t
 
-       -- A special case: Lazy continuation of a list item looking like
-       -- indented code e.g:
-       -- "  1.  Paragraph"
-       -- "    with two lines"
-       (IndentedCode : _, TextLine t)
-           | numUnmatched > 0
-           , _ :> L _ TextLine{} <- viewr cs
-           , ListItem{} <- ct
-           -> addLeaf lineNumber $ TextLine $ Text.strip t
+              -- A special case: Lazy continuaation of a quote looking like
+              -- indented code e.g:
+              -- "> foo"
+              -- "    - bar"
+              (IndentedCode :< _, TextLine t)
+                | numUnmatched > 0
+                , _ :> L _ TextLine{} <- viewr cs
+                , BlockQuote{} <- ct
+                -> addLeaf lineNumber $ TextLine $ Text.strip t
 
-       -- A special case: Lazy continuaation of a quote looking like
-       -- indented code e.g:
-       -- "> foo"
-       -- "    - bar"
-       (IndentedCode : _, TextLine t)
-         | numUnmatched > 0
-         , _ :> L _ TextLine{} <- viewr cs
-         , BlockQuote{} <- ct
-         -> addLeaf lineNumber $ TextLine $ Text.strip t
+              -- if it's a setext header line and the top container has a textline
+              -- as last child, add a setext header:
+              (Seq.EmptyL, SetextToken lev _setextText) | numUnmatched == 0 ->
+                  case Seq.spanr isTextLine cs of
+                    (textlines, cs') -- gather all preceding textlines and put them in the header
+                      | not (Seq.null textlines)
+                      -> put $ ContainerStack
+                           (Container ct
+                             (cs' |> L lineNumber
+                               (SetextHeading
+                                  lev
+                                  (Text.strip $ Text.unlines
+                                           $ fmap extractText
+                                           $ toList textlines))))
+                           rest
+                        -- Note: the following case should not occur, since
+                        -- we don't add a SetextHeading leaf unless lastLineIsText.
+                      | otherwise -> error "setext header line without preceding text lines"
 
-       -- if it's a setext header line and the top container has a textline
-       -- as last child, add a setext header:
-       ([], SetextToken lev _setextText) | numUnmatched == 0 ->
-           case Seq.spanr isTextLine cs of
-             (textlines, cs') -- gather all preceding textlines and put them in the header
-               | not (Seq.null textlines)
-               -> put $ ContainerStack
-                    (Container ct
-                      (cs' |> L lineNumber
-                        (SetextHeading
-                           lev
-                           (Text.strip $ Text.unlines
-                                    $ fmap extractText
-                                    $ toList textlines))))
-                    rest
-                 -- Note: the following case should not occur, since
-                 -- we don't add a SetextHeading leaf unless lastLineIsText.
-               | otherwise -> error "setext header line without preceding text lines"
-
-       -- The end tag can occur on the same line as the start tag.
-       (RawHtmlBlock condition : _, TextLine t)
-         | Right () <- parse (blockEnd condition) t
-         -> do closeContainer
-               addContainer (RawHtmlBlock condition)
-               addLeaf lineNumber (TextLine t)
-               closeContainer
-       -- otherwise, close all the unmatched containers, add the new
-       -- containers, and finally add the new leaf:
-       (ns, lf) -> do -- close unmatched containers, add new ones
-           _ <- replicateM numUnmatched closeContainer
-           _ <- mapM_ addContainer ns
-           case (reverse ns, lf) of
-             -- don't add extra blank at beginning of fenced code block
-             (FencedCode{}:_,  BlankLine{}) -> return ()
-             _ -> addLeaf lineNumber lf
+              -- The end tag can occur on the same line as the start tag.
+              (RawHtmlBlock condition :< _, TextLine t)
+                | Right () <- runParser (blockEnd condition) t
+                -> do closeContainer
+                      addContainer (RawHtmlBlock condition)
+                      addLeaf lineNumber (TextLine t)
+                      closeContainer
+              -- otherwise, close all the unmatched containers, add the new
+              -- containers, and finally add the new leaf:
+              (ns, lf) -> do -- close unmatched containers, add new ones
+                  _ <- replicateM numUnmatched closeContainer
+                  _ <- mapM_ addContainer ns
+                  case (Seq.viewr verbatimContainers, lf) of
+                    -- don't add extra blank at beginning of fenced code block
+                    (_ :>FencedCode{}, BlankLine{}) -> pure ()
+                    _                               -> addLeaf lineNumber lf
 
 tabCrusher :: Parser ()
 tabCrusher = do
@@ -478,27 +512,30 @@ tabCrusher = do
 -- containers whose scanners did not match.  (These will be closed unless
 -- we have a lazy text line.)
 tryOpenContainers :: [Container] -> Text -> (Text, Int)
-tryOpenContainers cs t = case parse (scanners $ map containerContinue cs) t of
-                         Right (t', n) -> (t', n)
-                         Left e -> error $ "error parsing scanners: " ++ show e
-  where scanners [] = (,0) <$> untilTheEnd
-        scanners (p:ps) = (p *> scanners ps)
-                       <|> ((,length (p:ps)) <$> untilTheEnd)
+tryOpenContainers cs t =
+  case runParser (scanners $ map containerContinue cs) t of
+    Right (t', n) -> (t', n)
+    Left e        -> error $ "error parsing scanners: " ++ show e
+  where
+    scanners [] = (,0) <$> untilTheEnd
+    scanners (p:ps) = (p *> scanners ps) <|> ((,length (p:ps)) <$> untilTheEnd)
 
 -- Try to match parsers for new containers.  Return list of new
 -- container types, and the leaf to add inside the new containers.
-tryNewContainers :: Bool -> Bool -> Int -> Text -> ([ContainerType], Leaf)
+tryNewContainers :: Bool -> Bool -> Int -> Text -> (Seq ContainerType, Leaf)
 tryNewContainers afterListItem lastLineIsText offset t =
-  case parse newContainers t of
-       Right (cs,t') -> (cs, t')
-       Left err      -> error (show err)
-  where newContainers = do
-          getPosition >>= \pos -> setPosition pos{ column = offset + 1 }
-          regContainers <- many (containerStart afterListItem lastLineIsText)
-          optional (verbatimContainerStart lastLineIsText) >>= \case
-            Just verbatimContainer -- FIXME: Very inefficient append
-              -> (regContainers ++ [verbatimContainer],) <$> textLineOrBlank
-            Nothing -> (regContainers,) <$> leaf lastLineIsText
+  case runParser newContainers t of
+    Right (cs,t') -> (cs, t')
+    Left err      -> error (show err)
+  where
+    newContainers = do
+      getPosition >>= \pos -> setPosition pos{ column = offset + 1 }
+      regContainers <- Seq.fromList <$> many (containerStart afterListItem lastLineIsText)
+      mVerbatimContainer <- optional $ verbatimContainerStart lastLineIsText
+      case mVerbatimContainer of
+        Just verbatimContainer -- FIXME: Very inefficient append
+          -> (regContainers |> verbatimContainer,) <$> textLineOrBlank
+        Nothing -> (regContainers,) <$> leaf lastLineIsText
 
 textLineOrBlank :: Parser Leaf
 textLineOrBlank = consolidate <$> untilTheEnd
@@ -508,11 +545,11 @@ textLineOrBlank = consolidate <$> untilTheEnd
 -- Parse a leaf node.
 leaf :: Bool -> Parser Leaf
 leaf lastLineIsText = pNonIndentSpaces *> asum
-    [ ATXHeading <$> parseAtxHeadingStart <*> parseAtxHeadingContent
-    , guard lastLineIsText *> parseSetextToken
-    , Rule <$ scanTBreakLine
-    , textLineOrBlank
-    ]
+  [ ATXHeading <$> parseAtxHeadingStart <*> parseAtxHeadingContent
+  , guard lastLineIsText *> parseSetextToken
+  , Rule <$ scanTBreakLine
+  , textLineOrBlank
+  ]
 
 -- Scanners
 
@@ -548,23 +585,25 @@ parseAtxHeadingStart = do
     _ -> error $ "IMPOSSIBLE HAPPENED: parseAtxHeading parsed more than 6 characters "
 parseAtxHeadingContent :: Parser Text
 parseAtxHeadingContent = Text.strip . removeATXSuffix <$> untilTheEnd
-  where removeATXSuffix t =
-          case dropTrailingHashes of
-                 t' | Text.null t' -> t'
-                      -- an escaped \#
-                    | Text.last t' == '\\' -> t' <> Text.replicate trailingHashes "#"
-                    | Text.last t' /= ' ' -> t
-                    | otherwise -> t'
-          where dropTrailingSpaces = Text.dropWhileEnd (== ' ') t
-                dropTrailingHashes = Text.dropWhileEnd (== '#') dropTrailingSpaces
-                trailingHashes = Text.length dropTrailingSpaces - Text.length dropTrailingHashes
+  where
+    removeATXSuffix t =
+      case dropTrailingHashes of
+        t' | Text.null t' -> t'
+             -- an escaped \#
+           | Text.last t' == '\\' -> t' <> Text.replicate trailingHashes "#"
+           | Text.last t' /= ' ' -> t
+           | otherwise -> t'
+      where
+        dropTrailingSpaces = Text.dropWhileEnd (== ' ') t
+        dropTrailingHashes = Text.dropWhileEnd (== '#') dropTrailingSpaces
+        trailingHashes     = Text.length dropTrailingSpaces - Text.length dropTrailingHashes
 
 parseSetextToken :: Parser Leaf
 parseSetextToken = fmap (uncurry SetextToken) $ withConsumed $ do
   d <- satisfy (\c -> c == '-' || c == '=')
   skipWhile (== d)
   void pBlankline
-  return $ if d == '=' then Heading1 else Heading2
+  pure $ if d == '=' then Heading1 else Heading2
 
 -- Scan a horizontal rule line: "...three or more hyphens, asterisks,
 -- or underscores on a line by themselves. If you wish, you may use
@@ -586,28 +625,32 @@ parseCodeFence = do
   void pSpaces
   rawattr <- optional (takeWhile1 (\c -> c /= '`' && c /= '~'))
   endOfInput
-  return FencedCode { startColumn = col
-                    , fence = cs
-                    , info = rawattr
-                    }
+  pure FencedCode
+    { codeStartColumn = col
+    , codeFence = cs
+    , codeInfo  = rawattr
+    }
 
 pHtmlBlockStart :: Bool -> Parser Condition
 pHtmlBlockStart lastLineIsText = lookAhead $ do
   discardOpt pNonIndentSpaces
   asum starters
   where
-    starters = [ condition1 <$ blockStart condition1
-               , condition2 <$ blockStart condition2
-               , condition3 <$ blockStart condition3
-               , condition4 <$ blockStart condition4
-               , condition5 <$ blockStart condition5
-               , condition6 <$ blockStart condition6
-               , condition7 <$ if lastLineIsText then mzero else blockStart condition7
-               ]
+    starters =
+      [ condition1 <$ blockStart condition1
+      , condition2 <$ blockStart condition2
+      , condition3 <$ blockStart condition3
+      , condition4 <$ blockStart condition4
+      , condition5 <$ blockStart condition5
+      , condition6 <$ blockStart condition6
+      , condition7 <$ if lastLineIsText then mzero else blockStart condition7
+      ]
 
-data Condition = Condition { blockStart :: Parser ()
-                           , blockEnd   :: Parser ()
-                           }
+data Condition =
+  Condition
+    { blockStart :: Parser ()
+    , blockEnd   :: Parser ()
+    }
 
 instance Show Condition where
   show _ = "Condition{}"
@@ -713,17 +756,18 @@ parseListMarker afterListItem lastLineIsText = do
   guard $ contentPadding > 0
   -- an empty list item cannot interrupt a paragraph
   when lastLineIsText $ notFollowedBy endOfInput
-  return ListItem { itemType = ty
-                  , padding = markerPadding + contentPadding + listMarkerWidth ty
-                  }
+  pure ListItem
+    { liType    = ty
+    , liPadding = markerPadding + contentPadding + listMarkerWidth ty
+    }
 
 listMarkerWidth :: ListType -> Int
 listMarkerWidth (Bullet _) = 1
 listMarkerWidth (Ordered _ n)
-    | n < 10    = 2
-    | n < 100   = 3
-    | n < 1000  = 4
-    | otherwise = 5
+  | n < 10    = 2
+  | n < 100   = 3
+  | n < 1000  = 4
+  | otherwise = 5
 
 -- Parse a bullet and return list type.
 parseBullet :: Parser ListType
@@ -744,9 +788,9 @@ parseBullet = do
 -- Parse a list number marker and return list type.
 parseListNumber :: Bool -> Parser ListType
 parseListNumber lastLineIsText = do
-    num :: Integer <- decimal
-    when lastLineIsText $
-      guard $ num == 1
-    guard $ num < (10 ^ (9 :: Integer))
-    wrap <- asum [Period <$ char '.', Paren <$ char ')']
-    return $ Ordered wrap (fromInteger num)
+  num :: Integer <- decimal
+  when lastLineIsText $
+    guard $ num == 1
+  guard $ num < (10 ^ (9 :: Integer))
+  wrap <- asum [Period <$ char '.', Paren <$ char ')']
+  return $ Ordered wrap (fromInteger num)

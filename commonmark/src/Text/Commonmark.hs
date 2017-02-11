@@ -1,18 +1,29 @@
--- | This module mostly contains reexports from the following modules:
+-- | It mostly contains reexports from the following modules:
 --
---     - "Text.Commonmark.Parser.Options"
+--     - "Text.Commonmark.Syntax"
 --     - "Text.Commonmark.Parser"
+--     - "Text.Commonmark.Parser.Options"
 --     - "Text.Commonmark.Html"
 
 module Text.Commonmark
     ( -- * Parser
-     commonmarkToDoc
-      -- ** Parser options
+      parse
     , ParserOption(..)
       -- * HTML Rendererer
-    , docToHtml
-      -- * Common compositions
-    , commonmarkToHtml
+    , render
+      -- * AST types
+      -- ** Document
+    , Doc(..)
+      -- *** Blocks
+    , Blocks
+    , Block(..)
+    , HeadingLevel(..)
+    , ListType(..)
+    , Delimiter(..)
+    , BulletMarker(..)
+      -- * Inlines
+    , Inlines
+    , Inline(..)
     ) where
 
 import Data.Text (Text)
@@ -20,7 +31,4 @@ import Data.Text (Text)
 import Text.Commonmark.Html
 import Text.Commonmark.Parser
 import Text.Commonmark.Parser.Options
-
--- | Parse Commonmark document and render it as HTML.
-commonmarkToHtml :: [ParserOption] -> Text -> Text
-commonmarkToHtml opts = docToHtml . commonmarkToDoc opts
+import Text.Commonmark.Syntax

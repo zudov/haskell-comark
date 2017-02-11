@@ -2,8 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 module Text.Commonmark.Html
-    ( docToHtml
-    ) where
+  ( render ) where
 
 import           Control.Applicative
 import           Control.Monad
@@ -26,17 +25,21 @@ import Data.Bits (shiftR, (.&.))
 import Text.Commonmark.Syntax
 
 -- | Render a Commonmark document as HTML.
-docToHtml :: Doc Text -> Text
-docToHtml (Doc bs) = toStrict $ toLazyText $ buildHtml (renderBlocks bs)
+render :: Doc Text -> Text
+render (Doc bs) =
+  toStrict $ toLazyText $ buildHtml $ renderBlocks bs
 
 type HtmlBuilder = WriterT Builder (State BuilderState) ()
-newtype BuilderState = BuilderState { newlineAllowed :: Bool }
+
+newtype BuilderState
+  = BuilderState
+      { newlineAllowed :: Bool }
 
 type Attribute = (String,Text)
 
 buildAttr :: Attribute -> Builder
 buildAttr (name,val) =
-    singleton ' ' <> fromString name <> "=\"" <> escapedHtml val <> singleton '"'
+  singleton ' ' <> fromString name <> "=\"" <> escapedHtml val <> singleton '"'
 
 type TagName    = String
 type TagContent = HtmlBuilder

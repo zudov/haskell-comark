@@ -41,9 +41,9 @@ newtype Doc t = Doc (Blocks t)
 
 instance NFData t => NFData (Doc t)
 
-instance Monoid t => Monoid (Doc t) where
+instance Monoid (Doc t) where
     mempty = Doc mempty
-    (Doc bs1 ) `mappend` (Doc bs2) = Doc (bs1 `mappend` bs2)
+    (Doc bs1) `mappend` (Doc bs2) = Doc (bs1 `mappend` bs2)
 
 type Blocks t = Seq (Block t)
 
@@ -154,7 +154,8 @@ instance NFData t => NFData (Inline t)
 
 -- | Consolidate adjacent text nodes
 normalize :: Monoid t => Inlines t -> Inlines t
-normalize inlines = case viewl inlines of
+normalize inlines =
+  case viewl inlines of
     Str t       :< (viewl -> Str ts :< is) -> normalize (Str (t <> ts) <| is)
     Image i u t :< is -> Image  (normalize i) u t  <| normalize is
     Link i u t  :< is -> Link   (normalize i) u t  <| normalize is

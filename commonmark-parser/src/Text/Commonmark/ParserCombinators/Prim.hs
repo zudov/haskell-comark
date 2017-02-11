@@ -4,14 +4,14 @@
 module Text.Commonmark.ParserCombinators.Prim
   ( Position(..)
   , Parser()
-  , parse
+  , runParser
   , ParserState()
   , ParseError(..)
   , withConsumed
   , consumedBy
   , string
   , (<?>)
-  , parseWithUnconsumed
+  , runParserWithUnconsumed
   , getPosition
   , setPosition
   , satisfy
@@ -183,19 +183,20 @@ p <?> msg = Parser $ \st ->
 {-# INLINE (<?>) #-}
 infixl 5 <?>
 
-parse :: Parser a -> Text -> Either ParseError a
-parse p t =
+runParser :: Parser a -> Text -> Either ParseError a
+runParser p t =
   fmap snd $ evalParser p ParserState { subject  = t
                                       , position = Position 1 1 1
                                       , lastChar = Nothing
                                       }
 
-parseWithUnconsumed :: Parser a -> Text -> Either ParseError (a,Text)
-parseWithUnconsumed p t = fmap (\(st,res) -> (res, subject st))
-                        $ evalParser p ParserState { subject = t
-                                                   , position = Position 1 1 1
-                                                   , lastChar = Nothing
-                                                   }
+runParserWithUnconsumed :: Parser a -> Text -> Either ParseError (a,Text)
+runParserWithUnconsumed p t =
+  fmap (\(st,res) -> (res, subject st))
+    $ evalParser p ParserState { subject = t
+                               , position = Position 1 1 1
+                               , lastChar = Nothing
+                               }
 
 getState :: Parser ParserState
 getState = Parser (\st -> success st st)

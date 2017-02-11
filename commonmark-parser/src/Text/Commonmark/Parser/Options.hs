@@ -2,19 +2,19 @@ module Text.Commonmark.Parser.Options
     ( ParserOption(..)
     , ParserOptions()
     , parserOptions
-    , defParserOptions
-    , poNormalize
-    , poLinkReferences
-    , poParseEmphasis
+    , _poNormalize
+    , _poLinkReferences
+    , _poParseEmphasis
     ) where
 
-import Data.Monoid (Endo (Endo, appEndo))
-import Data.Text   (Text)
+import Control.Applicative ((<|>))
+import Data.Monoid         (Endo(Endo, appEndo))
+import Data.Text           (Text)
 
 data ParserOption
-  = -- | Consolidate adjacent text nodes
+  = -- | Consolidate adjacent text nodes.
     Normalize
-    -- | Allows to predefine
+    -- | Predefine
     --   <http://spec.commonmark.org/0.20/#link-reference-definition link reference defenitions>.
     --
     --   References are represented with a mapping from a
@@ -32,21 +32,25 @@ data ParserOption
   | LinkReferences (Text -> Maybe (Text, Maybe Text))
 
 data ParserOptions = ParserOptions
-    { poNormalize      :: Bool
-    , poLinkReferences :: Text -> Maybe (Text, Maybe Text)
-    , poParseEmphasis  :: Bool
+    { _poNormalize      :: Bool
+    , _poLinkReferences :: Text -> Maybe (Text, Maybe Text)
+    , _poParseEmphasis  :: Bool
     }
 
+instance Monoid ParserOptions where
+  mempty = ParserOptions
+    { _poNormalize      = False
+    , _poLinkReferences = const Nothing
+    , _poParseEmphasis  = True
+    }
+  mappend a b =
+    b { _poLinkReferences =
+           \t -> _poLinkReferences b t <|> _poLinkReferences a t
+      }
+
 parserOptions :: [ParserOption] -> ParserOptions
-parserOptions = ($ defParserOptions) . appEndo . foldMap (Endo . optFn)
+parserOptions = ($ mempty) . appEndo . foldMap (Endo . optFn)
   where
     optFn :: ParserOption -> ParserOptions -> ParserOptions
-    optFn Normalize o          = o { poNormalize = True }
-    optFn (LinkReferences f) o = o { poLinkReferences = f }
-
-defParserOptions :: ParserOptions
-defParserOptions = ParserOptions
-  { poNormalize      = False
-  , poLinkReferences = const Nothing
-  , poParseEmphasis  = True
-  }
+    optFn Normalize o          = o { _poNormalize = True }
+    optFn (LinkReferences f) o = o { _poLinkReferences = f }

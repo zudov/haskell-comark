@@ -3,10 +3,6 @@
 {-# LANGUAGE TemplateHaskell   #-}
 module Main where
 
-
-import Text.Commonmark.Parser
-import Text.Commonmark.Parser.Options
-import Text.Commonmark.Syntax
 import           Control.Arrow      (second)
 import           Control.DeepSeq
 import           Criterion.Main
@@ -17,22 +13,22 @@ import           Data.Text          (Text)
 import qualified Data.Text          as Text
 import qualified Data.Text.Encoding as Text
 
-samples :: [(FilePath, Text)]
-samples = map (fmap decodeUtf8) $(embedDir "bench/samples/")
+import qualified Text.Commonmark.Parser         as Commonmark
+import qualified Text.Commonmark.Parser.Options as Commonmark
+import qualified Text.Commonmark.Syntax         as Commonmark
 
-fromRight :: Either a b -> b
-fromRight (Right b) = b
-fromRight (Left _) = error "fromRight"
+samples :: [(FilePath, Text)]
+samples = map (second Text.decodeUtf8) $(embedDir "bench/samples/")
 
 main :: IO ()
 main = defaultMain
-  [ bgroup "pathological with normalization"           $ benches [Normalize] pathological
+  [ bgroup "pathological with normalization"           $ benches [Commonmark.Normalize] pathological
   , bgroup "pathological without normalization"        $ benches [] pathological
-  , bgroup "markdown-it samples with normalization"    $ benches [Normalize]  samples
+  , bgroup "markdown-it samples with normalization"    $ benches [Commonmark.Normalize] samples
   , bgroup "markdown-it samples without normalization" $ benches [] samples
   ]
 
-benches opts = map (\(n,c) -> bench n $ nf (commonmarkToDoc opts) c)
+benches opts = map (\(n,c) -> bench n $ nf (Commonmark.parse opts) c)
 
 pathological :: [(String, Text)]
 pathological =
@@ -41,4 +37,4 @@ pathological =
   ]
 
 nested :: Int -> Text -> Text -> Text -> Text
-nested n opener inner closer = T.replicate n opener <> inner <> T.replicate n closer
+nested n opener inner closer = Text.replicate n opener <> inner <> Text.replicate n closer

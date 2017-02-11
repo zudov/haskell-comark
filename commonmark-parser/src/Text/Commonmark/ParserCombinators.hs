@@ -5,8 +5,8 @@ module Text.Commonmark.ParserCombinators (
     Position(..)
   , Parser
   , ParseError(..)
-  , parse
-  , parseWithUnconsumed
+  , runParser
+  , runParserWithUnconsumed
   , (<?>)
   , satisfy
   , withConsumed
@@ -71,8 +71,8 @@ notAfter f = do
 charClass :: String -> Set.Set Char
 charClass = Set.fromList . go
     where go (a:'-':b:xs) = [a..b] ++ go xs
-          go (x:xs) = x : go xs
-          go _ = ""
+          go (x:xs)       = x : go xs
+          go _            = ""
 {-# INLINE charClass #-}
 
 inClass :: String -> Char -> Bool
@@ -92,6 +92,7 @@ anyChar :: Parser Char
 anyChar = satisfy (const True)
 {-# INLINE anyChar #-}
 
+takeTill :: (Char -> Bool) -> Parser Text
 takeTill f = takeWhile (not . f)
 {-# INLINE takeTill #-}
 

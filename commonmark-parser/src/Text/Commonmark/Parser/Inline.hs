@@ -7,10 +7,10 @@
 {-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Text.Commonmark.Parser.Inline
-    ( parseInlines
-    , pReference
-    , parseInfoString
-    ) where
+  ( parseInlines
+  , pReference
+  , parseInfoString
+  ) where
 
 import Prelude hiding (takeWhile)
 
@@ -31,7 +31,7 @@ import qualified Data.Text.Lazy         as Text.Lazy
 import qualified Data.Text.Lazy.Builder as Text.Lazy.Builder
 
 import Text.Commonmark.Parser.Inline.EmphLink
-import Text.Commonmark.Parser.Options
+import Text.Commonmark.Parser.Options         (ParserOptions(..))
 import Text.Commonmark.Parser.Util
 import Text.Commonmark.ParserCombinators
 import Text.Commonmark.Syntax
@@ -40,34 +40,45 @@ import Text.Html.Email.Validate
 import Text.Html.Entity
 
 parseInlines :: ParserOptions -> Text -> Inlines Text
-parseInlines opts t = normalization $
-        case parse (msum <$> many (pInline opts) <* endOfInput) t of
-            Left e -> error ("parseInlines: " ++ show e) -- should not happen
-            Right r -> r
-    where normalization
-            | poNormalize opts = fmap (fmap (Text.Lazy.toStrict . Text.Lazy.Builder.toLazyText))
-                                     . normalize
-                                     . fmap (fmap Text.Lazy.Builder.fromText)
-            | otherwise = id
+parseInlines opts input =
+  case runParser (pInlines opts <* endOfInput) input of
+    Left e ->
+      error $ "[INTERNAL ERROR]: parseInlines: " <> show e
+    Right r
+      | _poNormalize opts -> normalizeInlines r
+      | otherwise -> r
+
+normalizeInlines :: Inlines Text -> Inlines Text
+normalizeInlines =
+  fmap (fmap (Text.Lazy.toStrict . Text.Lazy.Builder.toLazyText))
+    . normalize
+    . fmap (fmap Text.Lazy.Builder.fromText)
+
+pInlines :: ParserOptions -> Parser (Inlines Text)
+pInlines = fmap msum . many . pInline
 
 pInline :: ParserOptions -> Parser (Inlines Text)
-pInline opts =  pText
-            <|> pHardbreak
-            <|> pSoftbreak
-            <|> guard (poParseEmphasis opts) *> pEmphLink opts
-            <|> pBackslashed
-            <|> pAutolink
-            <|> pHtml
-            <|> pCode
-            <|> pEntity
-            <|> pFallback
+pInline opts =
+  asum
+    [ pText
+    , pHardbreak
+    , pSoftbreak
+    , guard (_poParseEmphasis opts) *> pEmphLink opts
+    , pBackslashed
+    , pAutolink
+    , pHtml
+    , pCode
+    , pEntity
+    , pFallback
+    ]
 
 parseInfoString :: Text -> Text
 parseInfoString t =
-    case parse (msum <$> (many parser <* endOfInput)) t of
-        Left _ -> t
-        Right is -> foldMap asText is
-    where parser = pText <|> pBackslashed <|> pEntity
+  case runParser (msum <$> many parser <* endOfInput) t of
+    Left _   -> t
+    Right is -> foldMap asText is
+  where
+    parser = pText <|> pBackslashed <|> pEntity
 
 pText :: Parser (Inlines Text)
 pText = str <$> takeWhile1 (not . isSpecial)
@@ -81,13 +92,15 @@ isSpecial = inClass "\\`*_[]!&<\t\n\r "
 -- | Either backslash-escaped punctuation or an actual backslash
 pBackslashedChar :: Parser Text
 pBackslashedChar =
-    Text.singleton <$> (char '\\' *> option '\\' (satisfy isAsciiPunctuation))
+  Text.singleton <$> (char '\\' *> option '\\' (satisfy isAsciiPunctuation))
 
 -- Parses a (possibly escaped) character satisfying the predicate.
 pSatisfy :: (Char -> Bool) -> Parser Char
-pSatisfy p = satisfy ((/= '\\') <&&> p)
-          <|> (char '\\' *> satisfy (isAsciiPunctuation <&&> p))
-          <|> (guard (p '\\') >> char '\\')
+pSatisfy p = asum
+  [ satisfy ((/= '\\') <&&> p)
+  , char '\\' *> satisfy (isAsciiPunctuation <&&> p)
+  , guard (p '\\') *> char '\\'
+  ]
 
 pBackslashed :: Parser (Inlines Text)
 pBackslashed = str <$> pBackslashedChar
@@ -103,9 +116,11 @@ pHardbreak =
       skipWhile (== ' ')       -- and more spaces (optionally)
 
 pSoftbreak :: Parser (Inlines Text)
-pSoftbreak = discardOpt (char ' ') *> pLineEnding
-                                   *> pure (singleton SoftBreak)
-                                   <* skipWhile (== ' ')
+pSoftbreak =
+  discardOpt (char ' ')
+    *> pLineEnding
+    *> pure (singleton SoftBreak)
+    <* skipWhile (== ' ')
 
 -- [ Code ] --------------------------------------------------------------------
 
@@ -127,8 +142,7 @@ pCode = singleton <$> do
 
 -- [ Raw Html ] ----------------------------------------------------------------
 pHtml :: Parser (Inlines Text)
-pHtml =
-  singleton . RawHtml <$> consumedBy (asum scanners)
+pHtml = singleton . RawHtml <$> consumedBy (asum scanners)
   where
     scanners =
       [ void tag, void comment, void instruction, void declaration, void cdata ]
@@ -182,8 +196,7 @@ pEntity :: Parser (Inlines Text)
 pEntity = str <$> pEntityText
 
 pEntityText :: Parser Text
-pEntityText =
-    char '&' *> entityBody <* char ';'
+pEntityText = char '&' *> entityBody <* char ';'
   where
     entityBody =
       codepointEntity <|> namedEntity
@@ -226,25 +239,29 @@ pScheme = do
 
 pEmphDelimToken :: EmphIndicator -> Parser Token
 pEmphDelimToken indicator@(indicatorChar -> c) = do
-    preceded <- peekLastChar
-    delim <- takeWhile1 (== c)
-    followed <- peekChar
-    let isLeft  = check followed preceded
-        isRight = check preceded followed
-        precededByPunctuation = fromMaybe False (isPunctuation <$> preceded)
-        followedByPunctuation = fromMaybe False (isPunctuation <$> followed)
-        canOpen =
-          isLeft && (isAsterisk indicator || not isRight || precededByPunctuation)
-        canClose =
-          isRight && (isAsterisk indicator || not isLeft || followedByPunctuation)
+  preceded <- peekLastChar
+  delim <- takeWhile1 (== c)
+  followed <- peekChar
+  let isLeft  = check followed preceded
+      isRight = check preceded followed
+      precededByPunctuation = fromMaybe False (isPunctuation <$> preceded)
+      followedByPunctuation = fromMaybe False (isPunctuation <$> followed)
+      canOpen =
+        isLeft && (isAsterisk indicator || not isRight || precededByPunctuation)
+      canClose =
+        isRight && (isAsterisk indicator || not isLeft || followedByPunctuation)
 
-    pure $ EmphDelimToken $ EmphDelim indicator (Text.length delim) canOpen canClose
-    where
-        check :: Maybe Char -> Maybe Char -> Bool
-        check a b = fromMaybe False (not . isUnicodeWhitespace <$> a) &&
-                    fromMaybe True
-                       ((not . isPunctuation <$> a) <||>
-                       ((isUnicodeWhitespace <||> isPunctuation) <$> b))
+  pure $ EmphDelimToken $ EmphDelim indicator (Text.length delim) canOpen canClose
+  where
+    check :: Maybe Char -> Maybe Char -> Bool
+    check a b =
+      and
+        [ fromMaybe False (not . isUnicodeWhitespace <$> a)
+        , or $ map (fromMaybe True)
+            [ not . isPunctuation <$> a
+            , (isUnicodeWhitespace <||> isPunctuation) <$> b
+            ]
+        ]
 
 pLinkOpener :: Parser Token
 pLinkOpener = do
@@ -262,16 +279,16 @@ pEmphLinkDelim = asum
 
 pEmphTokens :: ParserOptions -> Parser DelimStack
 pEmphTokens opts = do
-    delim <- pEmphLinkDelim
-    foldP
-      (\ds -> (Just <$> step ds) <|> (Nothing <$ endOfInput))
-      (Seq.singleton delim)
+  delim <- pEmphLinkDelim
+  foldP
+    (\ds -> (Just <$> step ds) <|> (Nothing <$ endOfInput))
+    (Seq.singleton delim)
   where
     step ds = asum
       [ char ']' *> lookForLinkOrImage ds
       , (ds |>) <$> pEmphLinkDelim
       , addInlines ds
-          <$> pInline opts { poParseEmphasis = False }
+          <$> pInline opts { _poParseEmphasis = False }
       ]
 
     lookForLinkOrImage :: DelimStack -> Parser DelimStack
@@ -283,20 +300,25 @@ pEmphTokens opts = do
             guard (linkActive opener)
             addInlines (deactivating prefix) <$> pLink
           where
-            fallback = addInlines prefix (unLinkOpen opener)
-                         <> addInline suffix closer
-            constr = case linkOpenerType opener of
-                       LinkOpener  -> Link
-                       ImageOpener -> Image
-            deactivating = case linkOpenerType opener of
-                             LinkOpener -> fmap deactivate
-                             ImageOpener -> id
-            content = foldMap unToken $ processEmphTokens (InlineToken (linkContent opener) <| suffix)
-            pLink = pInlineLink constr content
+            fallback =
+              addInlines prefix (unLinkOpen opener) <> addInline suffix closer
+            constr =
+              case linkOpenerType opener of
+                LinkOpener  -> Link
+                ImageOpener -> Image
+            deactivating =
+              case linkOpenerType opener of
+                LinkOpener  -> fmap deactivate
+                ImageOpener -> id
+            content =
+              foldMap unToken
+                $ processEmphTokens
+                $ InlineToken (linkContent opener) <| suffix
+            pLink =
+              pInlineLink constr content
                 <|> pReferenceLink constr content (linkLabel opener)
         Just (_, _, _) ->
           error "lookForLinkOrImage: impossible happened. expected LinkOpenToken"
-
       where
         closer = Str "]"
 
@@ -310,7 +332,7 @@ pEmphTokens opts = do
     pReferenceLink constr content lbl = do
       ref <- (Just <$> pLinkLabel) <|> (lbl <$ optional "[]")
       maybe mzero (pure . singleton . uncurry (constr content))
-                  (poLinkReferences opts =<< ref)
+                  (_poLinkReferences opts =<< ref)
 
 pEmphLink :: ParserOptions -> Parser (Inlines Text)
 pEmphLink opts =
@@ -389,8 +411,7 @@ pLinkLabel = char '[' *> (Text.concat <$> someTill chunk (char ']'))
     backslashChunk = "\\\\"
 
 pLinkDest :: Parser Text
-pLinkDest =
-  pointy <|> nonPointy
+pLinkDest = pointy <|> nonPointy
   where
     pointy = char '<' *> (Text.concat <$> many chunk) <* char '>'
       where

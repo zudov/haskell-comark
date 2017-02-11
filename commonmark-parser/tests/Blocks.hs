@@ -5,7 +5,6 @@ module Blocks where
 import Test.Hspec
 
 import Text.Commonmark.Parser
-import Text.Commonmark.Parser.Options
 import Text.Commonmark.Syntax
 import Text.Commonmark.TestUtils.CMark
 import Text.Commonmark.TestUtils.Spec
@@ -23,19 +22,22 @@ testBlock = do
     describe "Block tests from specification" $ do
         forM_ blockTests $ \SpecTest{..} -> do
            it (show testNumber ++ ": " ++ show testSection) $
-               normalizeDoc (commonmarkToDoc [Normalize] testIn)
-                   `shouldBe` normalizeDoc testOut
+               normalizeDoc (parse [Normalize] testIn)
+                 `shouldBe` normalizeDoc testOut
 
 -- As CMark's AST doesn't preserve the character which was used to indicate
 -- bullet lists, we need to change all Bullets to the same character
 normalizeDoc :: Data a => Doc a -> Doc a
 normalizeDoc = everywhere (mkT stripHtmlBlock) . everywhere (mkT changeBullet)
-    where changeBullet (Bullet _) = Bullet Minus
-          changeBullet a = a
-          stripHtmlBlock (HtmlBlock t) = HtmlBlock $ Text.strip t
-          stripHtmlBlock a = a
+  where
+    changeBullet (Bullet _) = Bullet Minus
+    changeBullet a          = a
+    stripHtmlBlock (HtmlBlock t) = HtmlBlock $ Text.strip t
+    stripHtmlBlock a             = a
 
 blockTests :: [SpecTest Text (Doc Text)]
-blockTests = unsafeCoerce $ filter (isNothing . docInline . testOut) $
-                [t { testOut = nodeToDoc $ commonmarkToNode [optNormalize]
-                                         $ testIn t } | t <- spec]
+blockTests =
+  unsafeCoerce $ filter (isNothing . docInline . testOut) $
+    [ t { testOut = nodeToDoc $ commonmarkToNode [optNormalize] $ testIn t }
+    | t <- spec
+    ]

@@ -17,5 +17,5 @@ main = hspec $
     describe "SpecTests" $
         forM_ spec $ \SpecTest{..} ->
             it (show testNumber ++ ": " ++ show testSection) $
-                (docToHtml $ nodeToDoc $ commonmarkToNode [optNormalize] $ testIn)
+                (render $ nodeToDoc $ commonmarkToNode [optNormalize] $ testIn)
                     `shouldBe` testOut

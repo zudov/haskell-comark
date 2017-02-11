@@ -4,27 +4,28 @@ import           Criterion.Main
 import qualified Data.Text      as Text
 import qualified Data.Text.IO   as Text
 
-import CMark
-import Control.DeepSeq
-import Text.Commonmark.Html
-import Text.Commonmark.Syntax
-import Text.Commonmark.TestUtils.CMark
+import qualified CMark
+import           Control.DeepSeq
+import           Text.Commonmark.Html            as Commonmark
+import           Text.Commonmark.Syntax          as Commonmark
+import           Text.Commonmark.TestUtils.CMark (ListType, nodeToDoc)
 
-instance NFData Node
-instance NFData PosInfo
-instance NFData NodeType
-instance NFData ListAttributes
+instance NFData CMark.Node
+instance NFData CMark.PosInfo
+instance NFData CMark.NodeType
+instance NFData CMark.ListAttributes
 instance NFData Text.Commonmark.TestUtils.CMark.ListType
-instance NFData DelimType
+instance NFData CMark.DelimType
 
 main :: IO ()
 main = do
-    file <- Text.readFile "benchinput.md"
+    input <- Text.readFile "benchinput.md"
     putStrLn "finished reading"
-    let node = commonmarkToNode [optNormalize] file
+    let node = CMark.commonmarkToNode [CMark.optNormalize] input
         doc  = nodeToDoc node
     node `deepseq` putStrLn "evaluated node"
     doc  `deepseq` putStrLn "evaluated doc"
-    defaultMain [ bench "cmark-hs"   $ nf (nodeToHtml []) node
-                , bench "commonmark" $ nf docToHtml doc
-                ]
+    defaultMain
+      [ bench "cmark-hs"   $ nf (CMark.nodeToHtml []) node
+      , bench "commonmark" $ nf Commonmark.render doc
+      ]
