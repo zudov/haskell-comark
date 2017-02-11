@@ -1,11 +1,11 @@
 -- | It mostly contains reexports from the following modules:
 --
---     - "Text.Comark.Syntax"
---     - "Text.Comark.Parser"
---     - "Text.Comark.Parser.Options"
---     - "Text.Comark.Html"
+--     - "Comark.Syntax"
+--     - "Comark.Parser"
+--     - "Comark.Parser.Options"
+--     - "Comark.Html"
 
-module Text.Comark
+module Comark
     ( -- * Parser
       parse
     , ParserOption(..)
@@ -28,7 +28,7 @@ module Text.Comark
 
 import Data.Text (Text)
 
-import Text.Comark.Html
-import Text.Comark.Parser
-import Text.Comark.Parser.Options
-import Text.Comark.Syntax
+import Comark.Html
+import Comark.Parser
+import Comark.Parser.Options
+import Comark.Syntax

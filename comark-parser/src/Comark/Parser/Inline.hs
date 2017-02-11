@@ -6,7 +6,7 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Text.Comark.Parser.Inline
+module Comark.Parser.Inline
   ( parseInlines
   , pReference
   , parseInfoString
@@ -30,12 +30,12 @@ import qualified Data.Text              as Text
 import qualified Data.Text.Lazy         as Text.Lazy
 import qualified Data.Text.Lazy.Builder as Text.Lazy.Builder
 
-import Text.Comark.Parser.Inline.EmphLink
-import Text.Comark.Parser.Options         (ParserOptions(..))
-import Text.Comark.Parser.Util
-import Text.Comark.ParserCombinators
-import Text.Comark.Syntax
-import Text.Comark.Syntax.Builder
+import Comark.Parser.Inline.EmphLink
+import Comark.Parser.Options         (ParserOptions(..))
+import Comark.Parser.Util
+import Comark.ParserCombinators
+import Comark.Syntax
+import Comark.Syntax.Builder
 import Text.Html.Email.Validate
 import Text.Html.Entity
 

@@ -20,15 +20,15 @@ library
       src/
       extended/
   exposed-modules:
-      Text.Comark.Parser
-      Text.Comark.Parser.Options
+      Comark.Parser
+      Comark.Parser.Options
   other-modules:
-      Text.Comark.Parser.Inline
-      Text.Comark.Parser.Inline.EmphLink
-      Text.Comark.Parser.Util
-      Text.Comark.ParserCombinators
-      Text.Comark.ParserCombinators.Prim
-      Text.Comark.Types
+      Comark.Parser.Inline
+      Comark.Parser.Inline.EmphLink
+      Comark.Parser.Util
+      Comark.ParserCombinators
+      Comark.ParserCombinators.Prim
+      Comark.Types
       Text.Html.Email.Validate
       Data.Char.Extended
       Data.Sequence.Extended

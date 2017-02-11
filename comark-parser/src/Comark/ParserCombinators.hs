@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
-module Text.Comark.ParserCombinators (
+module Comark.ParserCombinators (
     Position(..)
   , Parser
   , ParseError(..)
@@ -58,7 +58,7 @@ import qualified Data.Text           as Text
 
 import Prelude hiding (takeWhile)
 
-import Text.Comark.ParserCombinators.Prim
+import Comark.ParserCombinators.Prim
 
 notAfter :: (Char -> Bool) -> Parser ()
 notAfter f = do

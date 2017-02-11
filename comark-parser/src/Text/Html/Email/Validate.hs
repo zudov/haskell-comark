@@ -3,11 +3,11 @@ module Text.Html.Email.Validate
     ( isValidEmail
     ) where
 
+import           Comark.ParserCombinators
 import           Control.Monad
-import           Data.Either                   (isRight)
-import           Data.Text                     (Text)
-import qualified Data.Text                     as Text
-import           Text.Comark.ParserCombinators
+import           Data.Either              (isRight)
+import           Data.Text                (Text)
+import qualified Data.Text                as Text
 
 isValidEmail :: Text -> Bool
 isValidEmail = isRight . runParser (scanEmail *> endOfInput)

@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
-module Text.Comark.Html
+module Comark.Html
   ( render ) where
 
 import           Control.Applicative
@@ -22,7 +22,7 @@ import           Prelude
 
 import Data.Bits (shiftR, (.&.))
 
-import Text.Comark.Syntax
+import Comark.Syntax
 
 -- | Render a Commonmark document as HTML.
 render :: Doc Text -> Text

@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Text.Comark.TestUtils.Spec.TH
+module Comark.TestUtils.Spec.TH
     ( specFile
     ) where
 

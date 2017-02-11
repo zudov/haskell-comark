@@ -4,10 +4,10 @@ import qualified Data.Text    as Text
 import qualified Data.Text.IO as Text
 
 import CMark
+import Comark.Html
+import Comark.Syntax
+import Comark.TestUtils.CMark
 import Control.DeepSeq
-import Text.Comark.Html
-import Text.Comark.Syntax
-import Text.Comark.TestUtils.CMark
 
 main :: IO ()
 main = do

@@ -1,4 +1,4 @@
-module Text.Comark.Parser.Options
+module Comark.Parser.Options
     ( ParserOption(..)
     , ParserOptions()
     , parserOptions

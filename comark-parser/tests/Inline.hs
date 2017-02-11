@@ -8,10 +8,10 @@ import           Test.Hspec
 import           Data.Maybe
 import qualified Data.Sequence as Seq
 
-import Text.Comark.Parser          as Comark
-import Text.Comark.Syntax
-import Text.Comark.TestUtils.CMark
-import Text.Comark.TestUtils.Spec
+import Comark.Parser          as Comark
+import Comark.Syntax
+import Comark.TestUtils.CMark
+import Comark.TestUtils.Spec
 
 import Control.Monad
 import Data.Foldable (toList)

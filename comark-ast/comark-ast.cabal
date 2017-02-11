@@ -17,8 +17,8 @@ cabal-version:       >= 1.10
 
 library
   exposed-modules:
-      Text.Comark.Syntax
-      Text.Comark.Syntax.Builder
+      Comark.Syntax
+      Comark.Syntax.Builder
   other-modules:
       Paths_comark_ast
   other-extensions: DeriveDataTypeable DeriveGeneric

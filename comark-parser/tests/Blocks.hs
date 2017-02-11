@@ -4,10 +4,10 @@ module Blocks where
 
 import Test.Hspec
 
-import Text.Comark.Parser
-import Text.Comark.Syntax
-import Text.Comark.TestUtils.CMark
-import Text.Comark.TestUtils.Spec
+import Comark.Parser
+import Comark.Syntax
+import Comark.TestUtils.CMark
+import Comark.TestUtils.Spec
 
 import Control.Monad
 import Data.Generics

@@ -17,7 +17,7 @@ cabal-version:       >= 1.10
 
 library
   exposed-modules:
-      Text.Comark
+      Comark
   other-modules:
       Paths_comark
   hs-source-dirs:

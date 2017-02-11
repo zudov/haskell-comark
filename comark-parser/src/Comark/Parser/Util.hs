@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
-module Text.Comark.Parser.Util
+module Comark.Parser.Util
   ( Scanner ()
   , isLineEnding
   , pLineEnding
@@ -29,8 +29,8 @@ import           Data.Text           (Text)
 import qualified Data.Text.Extended  as Text
 import           Prelude             hiding (takeWhile)
 
-import Text.Comark.ParserCombinators
-import Text.Comark.Types
+import Comark.ParserCombinators
+import Comark.Types
 
 type Scanner = Parser ()
 

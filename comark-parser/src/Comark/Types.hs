@@ -1,4 +1,4 @@
-module Text.Comark.Types
+module Comark.Types
     ( ReferenceMap ) where
 
 import Data.Map  (Map)

@@ -24,8 +24,8 @@ library:
   - RecordWildCards
   ghc-options: -Wall
   exposed-modules:
-  - Text.Comark.Parser
-  - Text.Comark.Parser.Options
+  - Comark.Parser
+  - Comark.Parser.Options
   dependencies:
   - base >=4.7 && <5.0
   - html5-entity >=0.2.0.1

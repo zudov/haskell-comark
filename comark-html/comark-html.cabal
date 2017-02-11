@@ -22,7 +22,7 @@ flag profile
 
 library
   exposed-modules:
-      Text.Comark.Html
+      Comark.Html
   other-modules:
       Paths_comark_html
   other-extensions: DeriveDataTypeable DeriveGeneric

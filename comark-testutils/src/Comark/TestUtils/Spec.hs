@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE ViewPatterns      #-}
-module Text.Comark.TestUtils.Spec
+module Comark.TestUtils.Spec
     ( SpecTest(..)
     , spec
     , docInline
@@ -14,9 +14,9 @@ import           Data.Maybe           (fromJust)
 import           Data.Sequence        (ViewL(..), viewl)
 import           Data.Text            (Text)
 
-import Text.Comark.Syntax
+import Comark.Syntax
 
-import Text.Comark.TestUtils.Spec.TH
+import Comark.TestUtils.Spec.TH
 
 spec :: [SpecTest Text Text]
 spec = fromJust $ decode $ B.fromStrict $(specFile)

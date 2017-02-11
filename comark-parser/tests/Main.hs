@@ -9,9 +9,9 @@ import Test.QuickCheck
 import Control.DeepSeq
 import Data.Text       (pack)
 
-import Text.Comark.Parser
-import Text.Comark.Parser.Options
-import Text.Comark.Syntax
+import Comark.Parser
+import Comark.Parser.Options
+import Comark.Syntax
 
 main :: IO ()
 main = do

@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE ViewPatterns        #-}
-module Text.Comark.Parser
+module Comark.Parser
   ( parse
   , ParserOption(..)
   ) where
@@ -32,12 +32,12 @@ import qualified Data.Set                       as Set
 import           Data.Text.Extended             (Text)
 import qualified Data.Text.Extended             as Text
 
-import Text.Comark.Parser.Inline
-import Text.Comark.Parser.Options
-import Text.Comark.Parser.Util
-import Text.Comark.ParserCombinators
-import Text.Comark.Syntax
-import Text.Comark.Types
+import Comark.Parser.Inline
+import Comark.Parser.Options
+import Comark.Parser.Util
+import Comark.ParserCombinators
+import Comark.Syntax
+import Comark.Types
 
 -- | Parses Commonmark document. Any sequence of characters is a valid
 --   Commonmark document.

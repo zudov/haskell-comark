@@ -2,13 +2,13 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE ViewPatterns      #-}
 -- | Code and data types for parsing emphasis and links
-module Text.Comark.Parser.Inline.EmphLink where
+module Comark.Parser.Inline.EmphLink where
 
 import           Data.Text (Text)
 import qualified Data.Text as Text
 
-import Text.Comark.Syntax
-import Text.Comark.Syntax.Builder
+import Comark.Syntax
+import Comark.Syntax.Builder
 
 import Data.Sequence (Seq, ViewR(..), singleton, viewr, (<|), (><), (|>))
 

@@ -13,7 +13,7 @@ import System.Environment
 import System.Exit
 import System.IO
 
-import qualified Text.Comark as Comark
+import qualified Comark as Comark
 
 main :: IO ()
 main = do

@@ -5,16 +5,16 @@ import qualified Data.Text      as Text
 import qualified Data.Text.IO   as Text
 
 import qualified CMark
+import           Comark.Html            as Comark
+import           Comark.Syntax          as Comark
+import           Comark.TestUtils.CMark (ListType, nodeToDoc)
 import           Control.DeepSeq
-import           Text.Comark.Html            as Comark
-import           Text.Comark.Syntax          as Comark
-import           Text.Comark.TestUtils.CMark (ListType, nodeToDoc)
 
 instance NFData CMark.Node
 instance NFData CMark.PosInfo
 instance NFData CMark.NodeType
 instance NFData CMark.ListAttributes
-instance NFData Text.Comark.TestUtils.CMark.ListType
+instance NFData Comark.TestUtils.CMark.ListType
 instance NFData CMark.DelimType
 
 main :: IO ()

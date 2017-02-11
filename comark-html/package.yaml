@@ -16,7 +16,7 @@ library:
   - -Wall
   - -O2
   exposed-modules:
-  - Text.Comark.Html
+  - Comark.Html
   dependencies:
   - base >=4.7 && <5
   - text

@@ -9,7 +9,7 @@
 
 -- | A definition of Commonmark's AST
 
-module Text.Comark.Syntax
+module Comark.Syntax
     ( Doc(..)
     -- * Block Elements
     , Blocks

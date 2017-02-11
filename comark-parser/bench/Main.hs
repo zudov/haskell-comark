@@ -13,9 +13,9 @@ import           Data.Text          (Text)
 import qualified Data.Text          as Text
 import qualified Data.Text.Encoding as Text
 
-import qualified Text.Comark.Parser         as Comark
-import qualified Text.Comark.Parser.Options as Comark
-import qualified Text.Comark.Syntax         as Comark
+import qualified Comark.Parser         as Comark
+import qualified Comark.Parser.Options as Comark
+import qualified Comark.Syntax         as Comark
 
 samples :: [(FilePath, Text)]
 samples = map (second Text.decodeUtf8) $(embedDir "bench/samples/")

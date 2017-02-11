@@ -5,10 +5,10 @@ import Control.Monad
 
 import Test.Hspec
 
-import Text.Comark.TestUtils.CMark
-import Text.Comark.TestUtils.Spec
+import Comark.TestUtils.CMark
+import Comark.TestUtils.Spec
 
-import Text.Comark.Html
+import Comark.Html
 
 
 

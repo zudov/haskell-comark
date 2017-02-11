@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies    #-}
 {-# LANGUAGE ViewPatterns    #-}
-module Text.Comark.ParserCombinators.Prim
+module Comark.ParserCombinators.Prim
   ( Position(..)
   , Parser()
   , runParser

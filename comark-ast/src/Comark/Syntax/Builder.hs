@@ -1,12 +1,12 @@
 -- | Common AST-constructing functions
 
-module Text.Comark.Syntax.Builder
+module Comark.Syntax.Builder
     ( str
     ) where
 
 import Data.Sequence (singleton)
 
-import Text.Comark.Syntax
+import Comark.Syntax
 
 -- | A singleton string
 str :: a -> Inlines a

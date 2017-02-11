@@ -23,11 +23,11 @@ data-files:
 
 library
   exposed-modules:
-      Text.Comark.TestUtils.CMark
-      Text.Comark.TestUtils.Spec
+      Comark.TestUtils.CMark
+      Comark.TestUtils.Spec
   other-modules:
+      Comark.TestUtils.Spec.TH
       Paths_comark_testutils
-      Text.Comark.TestUtils.Spec.TH
       Paths_comark_testutils
   other-extensions: TemplateHaskell OverloadedStrings FlexibleInstances
   build-depends:

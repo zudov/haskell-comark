@@ -15,7 +15,7 @@ library:
   source-dirs: src
   ghc-options: -Wall
   exposed-modules:
-    - Text.Comark
+    - Comark
   dependencies:
     - comark-ast
     - comark-parser
