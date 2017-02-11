@@ -127,7 +127,7 @@ install:
 script:
 - |
   set -ex
-  ./spec/test/spec_tests.py -s spec/spec.txt --dump-tests > ./commonmark-testutils/spec.json
+  ./spec/test/spec_tests.py -s spec/spec.txt --dump-tests > ./comark-testutils/spec.json
   case "$BUILD" in
     stack)
       stack --no-terminal $ARGS build --haddock --no-haddock-deps

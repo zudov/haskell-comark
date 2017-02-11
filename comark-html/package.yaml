@@ -1,0 +1,80 @@
+name: comark-html
+version: '0.1.0.0'
+synopsis: Commonmark (markdown) to HTML renderer.
+description: See <https://github.com/zudov/haskell-comark#readme README>
+category: Text
+author: Konstantin Zudov
+maintainer: co@zudov.me
+copyright: (c) Konstantin Zudov, 2014, 2015, 2016
+license: BSD3
+library:
+  source-dirs: src/
+  other-extensions:
+  - DeriveDataTypeable
+  - DeriveGeneric
+  ghc-options:
+  - -Wall
+  - -O2
+  exposed-modules:
+  - Text.Comark.Html
+  dependencies:
+  - base >=4.7 && <5
+  - text
+  - comark-ast
+  - transformers
+executables:
+  comark-html-profile:
+    main: Main.hs
+    source-dirs: prof
+    ghc-options:
+    - -Wall
+    - -O2
+    - -threaded
+    when:
+    - condition: flag(profile)
+      then:
+        ghc-options:
+          - -Wall
+          - -O2
+          - -threaded
+          - -fprof-auto
+          - -with-rtsopts=-N -p -s -h -i0.1
+        dependencies:
+        - base >=4.7 && <5
+        - text
+        - comark-html
+        - comark-ast
+        - comark-testutils
+        - deepseq
+        - cmark
+      else:
+        buildable: false
+tests:
+  test:
+    main: Main.hs
+    source-dirs: tests/
+    ghc-options: -Wall
+    dependencies:
+    - base >=4.7 && <5
+    - comark-html
+    - comark-testutils
+    - hspec
+benchmarks:
+  progit-bench:
+    main: ProGit.hs
+    source-dirs: bench/
+    ghc-options: -O2
+    dependencies:
+    - base >=4.7 && <5
+    - criterion
+    - text
+    - comark-html
+    - comark-ast
+    - comark-testutils
+    - cmark >=0.3.2
+    - deepseq
+flags:
+  profile:
+    description: Build profiling executables
+    manual: true
+    default: false
