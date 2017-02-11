@@ -150,8 +150,8 @@ instance MonadPlus Parser where
   mzero = Parser $ \st -> Left $ ParseError (position st) "(mzero)"
   mplus p1 p2 = Parser $ \st ->
     case evalParser p1 st of
-         Right res  -> Right res
-         Left _     -> evalParser p2 st
+         Right res -> Right res
+         Left _    -> evalParser p2 st
   {-# INLINE mzero #-}
   {-# INLINE mplus #-}
 
@@ -271,7 +271,7 @@ skip :: (Char -> Bool) -> Parser ()
 skip f = Parser $ \st ->
   case Text.uncons (subject st) of
        Just (c,_) | f c -> success (advance st (Text.singleton c)) ()
-       _                -> failure st "character satisfying condition"
+       _          -> failure st "character satisfying condition"
 {-# INLINE skip #-}
 
 

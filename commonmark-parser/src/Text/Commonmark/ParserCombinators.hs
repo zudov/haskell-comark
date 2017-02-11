@@ -55,7 +55,8 @@ import qualified Data.Set            as Set
 import           Data.String
 import           Data.Text           (Text)
 import qualified Data.Text           as Text
-import           Prelude             hiding (takeWhile)
+
+import Prelude hiding (takeWhile)
 
 import Text.Commonmark.ParserCombinators.Prim
 

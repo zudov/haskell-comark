@@ -16,9 +16,8 @@ import           Data.Monoid
 import           Data.Text                         (Text)
 import qualified Data.Text                         as T
 import           Data.Text.Lazy                    (toStrict)
-import           Data.Text.Lazy.Builder            (Builder, fromString,
-                                                    fromText, singleton,
-                                                    toLazyText)
+import           Data.Text.Lazy.Builder
+  (Builder, fromString, fromText, singleton, toLazyText)
 import           Numeric                           (showIntAtBase)
 import           Prelude
 

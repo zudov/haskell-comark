@@ -12,7 +12,7 @@ findl p s =
   case breakl p s of
     (prefix, rest) ->
       case viewl rest of
-        EmptyL -> Nothing
+        EmptyL      -> Nothing
         a :< suffix -> Just (prefix, a, suffix)
 
 -- | Finds the rightmost element that satisfies the predicate.
@@ -22,5 +22,5 @@ findr p s =
   case breakr p s of
     (suffix, rest) ->
       case viewr rest of
-        EmptyR -> Nothing
+        EmptyR      -> Nothing
         prefix :> a -> Just (suffix, a, prefix)

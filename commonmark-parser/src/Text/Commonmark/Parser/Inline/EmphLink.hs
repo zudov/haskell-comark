@@ -10,7 +10,7 @@ import qualified Data.Text as Text
 import Text.Commonmark.Syntax
 import Text.Commonmark.Syntax.Builder
 
-import Data.Sequence (Seq, ViewR (..), singleton, viewr, (<|), (><), (|>))
+import Data.Sequence (Seq, ViewR(..), singleton, viewr, (<|), (><), (|>))
 
 type DelimStack = Seq Token
 
@@ -42,7 +42,7 @@ data LinkOpen
 unLinkOpen :: LinkOpen -> Inlines Text
 unLinkOpen l =
   case linkOpenerType l of
-    LinkOpener -> Str "["
+    LinkOpener  -> Str "["
     ImageOpener -> Str "!["
    <| linkContent l
 

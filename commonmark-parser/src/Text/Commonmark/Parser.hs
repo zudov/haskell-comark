@@ -21,9 +21,8 @@ import           Data.List                      (intercalate)
 import qualified Data.Map                       as Map
 import           Data.Maybe                     (mapMaybe)
 import           Data.Monoid
-import           Data.Sequence                  (Seq, ViewL (..), ViewR (..),
-                                                 singleton, viewl, viewr, (<|),
-                                                 (><), (|>))
+import           Data.Sequence
+  (Seq, ViewL(..), ViewR(..), singleton, viewl, viewr, (<|), (><), (|>))
 import qualified Data.Sequence                  as Seq
 import qualified Data.Set                       as Set
 import           Data.Text.Extended             (Text)

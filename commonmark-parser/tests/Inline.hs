@@ -39,15 +39,15 @@ normalizeDoc :: Doc Text -> Doc Text
 normalizeDoc (Doc blocks) = Doc $ fmap m blocks
   where
     m (Heading a b) = Heading a $ (dropEmptyStrs . normalize) b
-    m (Para a) = Para $ (dropEmptyStrs . normalize) a
-    m (Quote a) = Quote $ fmap m a
-    m (List a b c) = List a b $ fmap (fmap m) c
-    m a = a
+    m (Para a)      = Para $ (dropEmptyStrs . normalize) a
+    m (Quote a)     = Quote $ fmap m a
+    m (List a b c)  = List a b $ fmap (fmap m) c
+    m a             = a
 
     dropEmptyStrs = Seq.filter (not . isEmptyStr)
 
     isEmptyStr (Str a) = Text.null a
-    isEmptyStr _ = False
+    isEmptyStr _       = False
 
 unDoc :: Doc Text -> [Block Text]
 unDoc (Doc bs) = toList bs

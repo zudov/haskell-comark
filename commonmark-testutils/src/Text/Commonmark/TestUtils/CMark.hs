@@ -20,7 +20,7 @@ import Text.Commonmark.Syntax
 -- | Converts a cmark's AST to commonmark's AST
 nodeToDoc :: Node -> Doc Text
 nodeToDoc (Node _ DOCUMENT ns) = Doc $ Seq.fromList $ map nodeToBlock ns
-nodeToDoc _ = error "Top-level node must be DOCUMENT"
+nodeToDoc _                    = error "Top-level node must be DOCUMENT"
 
 nodeToBlock :: Node -> Block Text
 nodeToBlock (Node _ THEMATIC_BREAK []) = ThematicBreak
@@ -49,7 +49,7 @@ nodeToBlock (Node _ (LIST ListAttributes{..}) ns) =
 nodeToBlock (Node _ type_ _) = error $ show type_ ++ " isn't a block node"
 
 itemToBlocks :: Node -> Blocks Text
-itemToBlocks (Node _ ITEM ns) = Seq.fromList $ map nodeToBlock ns
+itemToBlocks (Node _ ITEM ns)  = Seq.fromList $ map nodeToBlock ns
 itemToBlocks (Node _ type_ _ ) = error $ show type_ ++ " isn't an ITEM"
 
 nodeToInline :: Node -> Inline Text

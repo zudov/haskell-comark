@@ -22,8 +22,8 @@ import           Data.Foldable          (asum)
 import           Data.List              (foldl')
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Sequence          (ViewL (..), singleton, viewl, (<|),
-                                         (|>))
+import           Data.Sequence
+  (ViewL(..), singleton, viewl, (<|), (|>))
 import qualified Data.Sequence.Extended as Seq
 import           Data.Text              (Text)
 import qualified Data.Text              as Text

@@ -11,7 +11,7 @@ module Text.Commonmark.TestUtils.Spec
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as B
 import           Data.Maybe           (fromJust)
-import           Data.Sequence        (ViewL (..), viewl)
+import           Data.Sequence        (ViewL(..), viewl)
 import           Data.Text            (Text)
 
 import Text.Commonmark.Syntax
@@ -39,5 +39,5 @@ instance FromJSON (SpecTest Text Text) where
 --   This function extracts sequence of inline elements from such tests.
 docInline :: Doc a -> Maybe (Inlines a)
 docInline (Doc (viewl -> (Para is :< (viewl -> EmptyL)))) = Just is
-docInline _ = Nothing
+docInline _                                               = Nothing
 

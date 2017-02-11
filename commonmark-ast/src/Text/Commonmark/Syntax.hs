@@ -28,10 +28,9 @@ module Text.Commonmark.Syntax
 import Control.DeepSeq (NFData)
 import Data.Data       (Data, Typeable)
 import Data.Monoid
-import Data.Sequence   (Seq, ViewL (..), viewl, (<|))
-import Data.String     (IsString (..))
+import Data.Sequence   (Seq, ViewL(..), viewl, (<|))
+import Data.String     (IsString(..))
 import GHC.Generics    (Generic)
-
 
 -- | A Document
 newtype Doc t = Doc (Blocks t)
@@ -169,12 +168,12 @@ normalize inlines = case viewl inlines of
 --   Note that it extracts only the 'primary' content (the one that is shown in
 --   first place). For example it wouldn't extract an URL from the link.
 asText :: (Monoid a, IsString a) => Inline a -> a
-asText (Str t) = t
-asText (Emph is) = foldMap asText is
-asText (Strong is) = foldMap asText is
-asText (Code t) = t
-asText (Link is _ _) = foldMap asText is
+asText (Str t)        = t
+asText (Emph is)      = foldMap asText is
+asText (Strong is)    = foldMap asText is
+asText (Code t)       = t
+asText (Link is _ _)  = foldMap asText is
 asText (Image is _ _) = foldMap asText is
-asText (RawHtml t) = t
-asText SoftBreak = " "
-asText HardBreak = "\n"
+asText (RawHtml t)    = t
+asText SoftBreak      = " "
+asText HardBreak      = "\n"
