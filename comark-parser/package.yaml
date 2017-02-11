@@ -1,5 +1,5 @@
 name: comark-parser
-version: '0.1.0.0'
+version: '0.1.0'
 synopsis: Parser for Commonmark (markdown)
 description: See <https://github.com/zudov/haskell-comark#readme README>
 category: Text

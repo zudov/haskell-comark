@@ -1,5 +1,5 @@
 name: comark-testutils
-version: '0.1.0.0'
+version: '0.1.0'
 synopsis: Some utilities for testing commonmark family of packages.
 description: see README.md
 category: Text

@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:                comark-ast
-version:             0.1.0.0
+version:             0.1.0
 synopsis:            Definitions of AST that represents a Commonmark (markdown) document.
 description:         See <https://github.com/zudov/haskell-comark#readme README>
 license:             BSD3
