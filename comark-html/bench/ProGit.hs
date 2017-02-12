@@ -19,7 +19,7 @@ instance NFData CMark.DelimType
 
 main :: IO ()
 main = do
-    input <- Text.readFile "benchinput.md"
+    input <- Text.readFile "progit.md"
     putStrLn "finished reading"
     let node = CMark.commonmarkToNode [CMark.optNormalize] input
         doc  = nodeToDoc node
