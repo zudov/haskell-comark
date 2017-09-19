@@ -535,7 +535,7 @@ tryNewContainers afterListItem lastLineIsText offset t =
       case mVerbatimContainer of
         Just verbatimContainer -- FIXME: Very inefficient append
           -> (regContainers |> verbatimContainer,) <$> textLineOrBlank
-        Nothing -> (regContainers,) <$> leaf lastLineIsText
+        Nothing -> (regContainers,) <$> parseLeaf lastLineIsText
 
 textLineOrBlank :: Parser Leaf
 textLineOrBlank = consolidate <$> untilTheEnd
@@ -543,8 +543,8 @@ textLineOrBlank = consolidate <$> untilTheEnd
                        | otherwise        = TextLine  ts
 
 -- Parse a leaf node.
-leaf :: Bool -> Parser Leaf
-leaf lastLineIsText = pNonIndentSpaces *> asum
+parseLeaf :: Bool -> Parser Leaf
+parseLeaf lastLineIsText = pNonIndentSpaces *> asum
   [ ATXHeading <$> parseAtxHeadingStart <*> parseAtxHeadingContent
   , guard lastLineIsText *> parseSetextToken
   , Rule <$ scanTBreakLine

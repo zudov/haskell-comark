@@ -26,9 +26,6 @@ module Comark
     , Inline(..)
     ) where
 
-import Data.Text (Text)
-
 import Comark.Html
 import Comark.Parser
-import Comark.Parser.Options
 import Comark.Syntax

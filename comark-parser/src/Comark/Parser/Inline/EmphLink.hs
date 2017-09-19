@@ -8,7 +8,6 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 
 import Comark.Syntax
-import Comark.Syntax.Builder
 
 import Data.Sequence (Seq, ViewR(..), singleton, viewr, (<|), (><), (|>))
 
