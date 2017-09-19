@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.16.0.
+-- This file has been generated from package.yaml by hpack version 0.17.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -28,7 +28,6 @@ library
       Comark.Parser.Util
       Comark.ParserCombinators
       Comark.ParserCombinators.Prim
-      Comark.Types
       Text.Html.Email.Validate
       Data.Char.Extended
       Data.Sequence.Extended

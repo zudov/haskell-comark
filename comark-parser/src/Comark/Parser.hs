@@ -37,7 +37,6 @@ import Comark.Parser.Options
 import Comark.Parser.Util
 import Comark.ParserCombinators
 import Comark.Syntax
-import Comark.Types
 
 -- | Parses Commonmark document. Any sequence of characters is a valid
 --   Commonmark document.
