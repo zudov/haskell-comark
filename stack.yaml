@@ -6,11 +6,6 @@ packages:
     - ./comark-html
     - location: ./comark-testutils
       extra-dep: true
-    - location:
-        git: https://github.com/zudov/cmark-hs.git
-        commit: f173bfc59da832f2298f8e7ad255b82a0af4925a
-      extra-dep: true
-
 extra-deps:
     - html5-entity-0.2.0.3
     - control-bool-0.2.1
