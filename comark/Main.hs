@@ -2,12 +2,11 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main where
 
-import Control.Applicative
-
-import           Data.Monoid  ((<>))
-import           Data.Text    (Text)
-import qualified Data.Text    as Text
-import qualified Data.Text.IO as Text
+import           Control.Monad (forM_, (<=<))
+import           Data.Monoid   ((<>))
+import           Data.Text     (Text)
+import qualified Data.Text     as Text
+import qualified Data.Text.IO  as Text
 
 import System.Environment
 import System.Exit
@@ -22,8 +21,11 @@ main = do
     Left err -> do
       hPutStrLn stderr err
       exitFailure
-    Right opts ->
+    Right opts@Options{inputFiles = [] } ->
       Text.interact (processor opts)
+    Right opts@Options{inputFiles = files } ->
+      forM_ files $ do
+        Text.putStrLn . processor opts <=< Text.readFile
 
 processor :: Options -> Text -> Text
 processor Options{..} = render . Comark.parse [ Comark.Normalize | normalize ]
