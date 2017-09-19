@@ -1,0 +1,34 @@
+name:                comark-examples
+version:             0.1.0
+synopsis:            Example usages of comark.
+description:         Every example is a self contained executable that starts with 'comark-example'.
+homepage:            https://github.com/zudov/haskell-comark#readme
+license:             BSD3
+author:              Konstantin Zudov
+maintainer:          co@zudov.me
+copyright:           2017 Konstantin zudov
+category:            Text
+extra-source-files:
+- README.md
+
+dependencies:
+- base >= 4.7 && < 5
+- syb
+- text
+- highlighting-kate
+- blaze-html
+- comark
+- comark-ast
+- comark-parser
+- comark-html
+
+executables:
+  comark-examples-mark2html:
+    source-dirs: src
+    main: mark2html.hs
+  comark-examples-github_urls:
+    source-dirs: src
+    main: github_urls.hs
+  comark-examples-highlight:
+    source-dirs: src
+    main: highlight.hs
