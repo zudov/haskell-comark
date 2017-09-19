@@ -50,7 +50,9 @@ parse (parserOptions -> opts) text =
       $ processLines text
   where
     extendRefmap refmap =
-      opts { _poLinkReferences = lookupLinkReference refmap }
+      opts { _poLinkReferences =
+               \t -> lookupLinkReference refmap t <|> _poLinkReferences opts t
+           }
 
 -- General parsing strategy:
 --

@@ -52,5 +52,7 @@ parserOptions :: [ParserOption] -> ParserOptions
 parserOptions = ($ mempty) . appEndo . foldMap (Endo . optFn)
   where
     optFn :: ParserOption -> ParserOptions -> ParserOptions
-    optFn Normalize o          = o { _poNormalize = True }
-    optFn (LinkReferences f) o = o { _poLinkReferences = f }
+    optFn Normalize o = o
+      { _poNormalize = True }
+    optFn (LinkReferences f) o = o
+      { _poLinkReferences = \t -> f t <|> _poLinkReferences o t }
