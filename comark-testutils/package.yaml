@@ -26,8 +26,5 @@ dependencies:
 library:
   source-dirs: src/
   ghc-options: -Wall
-  exposed-modules:
-  - Comark.TestUtils.CMark
-  - Comark.TestUtils.Spec
 data-files:
 - spec.json

@@ -17,6 +17,3 @@ dependencies:
 library:
   source-dirs: src/
   ghc-options: -Wall
-  exposed-modules:
-  - Comark.Syntax
-  - Comark.Syntax.Builder

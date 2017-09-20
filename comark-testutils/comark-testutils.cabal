@@ -25,9 +25,7 @@ library
   exposed-modules:
       Comark.TestUtils.CMark
       Comark.TestUtils.Spec
-  other-modules:
       Comark.TestUtils.Spec.TH
-      Paths_comark_testutils
       Paths_comark_testutils
   other-extensions: TemplateHaskell OverloadedStrings FlexibleInstances
   build-depends:
