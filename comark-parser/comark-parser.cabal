@@ -10,7 +10,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Konstantin Zudov
 maintainer:          co@zudov.me
-copyright:           (c) Konstantin Zudov, 2014, 2015, 2016
+copyright:           (c) Konstantin Zudov, 2015, 2016, 2017
 category:            Text
 build-type:          Simple
 cabal-version:       >= 1.10
