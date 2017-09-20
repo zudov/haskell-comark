@@ -16,3 +16,14 @@ comark-html/progit.md: progit
 	done
 
 benchfiles: comark-html/progit.md
+
+gh-pages:
+	git checkout master
+	stack haddock
+	git checkout gh-pages
+	mkdir -p docs
+	cp -r $$(stack path --local-doc-root)/* docs/
+	git add docs/
+	git commit -m "Automatic Haddock commit"
+	git push -f -u origin gh-pages
+	git checkout master
