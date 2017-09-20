@@ -12,7 +12,7 @@ import System.Environment
 import System.Exit
 import System.IO
 
-import qualified Comark as Comark
+import qualified Comark
 
 main :: IO ()
 main = do
@@ -24,7 +24,7 @@ main = do
     Right opts@Options{inputFiles = [] } ->
       Text.interact (processor opts)
     Right opts@Options{inputFiles = files } ->
-      forM_ files $ do
+      forM_ files $
         Text.putStrLn . processor opts <=< Text.readFile
 
 processor :: Options -> Text -> Text
@@ -50,7 +50,7 @@ initOpts = Options
   }
 
 usage :: String
-usage = unlines $
+usage = unlines
     [ "Usage:    comark-hs [OPTIONS*] [FILE*]"
     , "Options:"
     , "  --to, -t FORMAT  Specify output format (html, native)"
