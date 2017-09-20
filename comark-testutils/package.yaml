@@ -21,7 +21,7 @@ dependencies:
 - aeson
 - bytestring
 - template-haskell
-- comark-ast
+- comark-syntax
 - file-embed
 library:
   source-dirs: src/

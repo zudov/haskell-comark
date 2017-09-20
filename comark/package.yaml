@@ -17,7 +17,7 @@ library:
   exposed-modules:
     - Comark
   dependencies:
-    - comark-ast
+    - comark-syntax
     - comark-parser
     - comark-html
 executables:

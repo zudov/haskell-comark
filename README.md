@@ -12,7 +12,7 @@ The functionality is split across several libraries which are contained in this
 repo:
 
 - **comark**           -- reexports other libraries
-- **comark-ast**       -- definition of Commonmark's AST;
+- **comark-syntax**    -- definition of Commonmark's AST;
 - **comark-parser**    -- parsing commonmark text and producing AST
 - **comark-html**      -- rendering commonmark's AST into HTML
 - **comark-testutils** -- utilities for testing these packages.
@@ -80,7 +80,7 @@ And make sure to checkout the docs.
 - [ ] Add helpers for processing/walking the AST and examples of typical manipulations.
 - [ ] Work on extensibility.
 - [ ] Compile with ghcjs. If performance/size isn't great, consider making bindings to
-	  `commonmark.js` but provide `comark-ast` based interface.
+	  `commonmark.js` but provide `comark-syntax` based interface.
 
 # License
 

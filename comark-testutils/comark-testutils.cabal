@@ -38,7 +38,7 @@ library
     , aeson
     , bytestring
     , template-haskell
-    , comark-ast
+    , comark-syntax
     , file-embed
   hs-source-dirs:
       src/

@@ -25,7 +25,7 @@ library
   build-depends:
       base >=4.7 && <5
     , text
-    , comark-ast
+    , comark-syntax
     , comark-parser
     , comark-html
   default-language: Haskell2010

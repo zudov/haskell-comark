@@ -18,7 +18,7 @@ dependencies:
 - highlighting-kate
 - blaze-html
 - comark
-- comark-ast
+- comark-syntax
 - comark-parser
 - comark-html
 

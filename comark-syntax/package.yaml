@@ -1,4 +1,4 @@
-name: comark-ast
+name: comark-syntax
 version: '0.1.0'
 synopsis: Definitions of AST that represents a Commonmark (markdown) document.
 description: See <https://github.com/zudov/haskell-comark#readme README>

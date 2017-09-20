@@ -36,7 +36,7 @@ library
   other-extensions: OverloadedStrings TupleSections TupleSections ViewPatterns OverloadedStrings LambdaCase RecordWildCards
   build-depends:
       text
-    , comark-ast
+    , comark-syntax
     , base >=4.7 && <5.0
     , html5-entity >=0.2.0.1
     , control-bool
@@ -56,7 +56,7 @@ test-suite test
   ghc-options: -Wall
   build-depends:
       text
-    , comark-ast
+    , comark-syntax
     , base >=4.7
     , hspec
     , syb
@@ -75,7 +75,7 @@ benchmark bench
   main-is: Main.hs
   build-depends:
       text
-    , comark-ast
+    , comark-syntax
     , base >=4.7 && <5
     , criterion
     , comark-testutils

@@ -20,7 +20,7 @@ library:
   dependencies:
   - base >=4.7 && <5
   - text
-  - comark-ast
+  - comark-syntax
   - transformers
 executables:
   comark-html-profile:
@@ -43,7 +43,7 @@ executables:
         - base >=4.7 && <5
         - text
         - comark-html
-        - comark-ast
+        - comark-syntax
         - comark-testutils
         - deepseq
         - cmark
@@ -69,7 +69,7 @@ benchmarks:
     - criterion
     - text
     - comark-html
-    - comark-ast
+    - comark-syntax
     - comark-testutils
     - cmark >=0.3.2
     - deepseq

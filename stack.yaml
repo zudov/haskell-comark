@@ -1,7 +1,7 @@
 resolver: lts-9.5
 packages:
     - ./comark
-    - ./comark-ast
+    - ./comark-syntax
     - ./comark-parser
     - ./comark-html
     - location: ./comark-testutils
