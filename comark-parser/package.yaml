@@ -23,6 +23,9 @@ library:
   - LambdaCase
   - RecordWildCards
   ghc-options: -Wall
+  exposed-modules:
+  - Comark.Parser
+  - Comark.Parser.Options
   dependencies:
   - base >=4.7 && <5.0
   - html5-entity >=0.2.0.1

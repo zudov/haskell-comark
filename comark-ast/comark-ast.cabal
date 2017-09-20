@@ -19,6 +19,8 @@ library
   exposed-modules:
       Comark.Syntax
       Comark.Syntax.Builder
+  other-modules:
+      Paths_comark_ast
   other-extensions: DeriveDataTypeable DeriveGeneric
   build-depends:
       base >=4.7 && <5.0

@@ -21,9 +21,10 @@ library
       extended/
   exposed-modules:
       Comark.Parser
+      Comark.Parser.Options
+  other-modules:
       Comark.Parser.Inline
       Comark.Parser.Inline.EmphLink
-      Comark.Parser.Options
       Comark.Parser.Util
       Comark.ParserCombinators
       Comark.ParserCombinators.Prim
@@ -31,6 +32,7 @@ library
       Data.Char.Extended
       Data.Sequence.Extended
       Data.Text.Extended
+      Paths_comark_parser
   other-extensions: OverloadedStrings TupleSections TupleSections ViewPatterns OverloadedStrings LambdaCase RecordWildCards
   build-depends:
       text

@@ -18,6 +18,8 @@ cabal-version:       >= 1.10
 library
   exposed-modules:
       Comark
+  other-modules:
+      Paths_comark
   hs-source-dirs:
       src
   build-depends:
