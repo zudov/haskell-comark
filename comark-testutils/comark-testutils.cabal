@@ -18,9 +18,6 @@ cabal-version:       >= 1.10
 extra-source-files:
     README.md
 
-data-files:
-    spec.json
-
 library
   exposed-modules:
       Comark.TestUtils.CMark

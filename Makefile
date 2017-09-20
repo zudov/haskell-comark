@@ -24,6 +24,6 @@ gh-pages:
 	mkdir -p docs
 	cp -r $$(stack path --local-doc-root)/* docs/
 	git add docs/
-	git commit -m "Automatic Haddock commit"
-	git push -f -u origin gh-pages
+	git commit -m "Automatic Haddock commit" --allow-empty
+	git push origin gh-pages
 	git checkout master

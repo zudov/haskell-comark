@@ -22,12 +22,12 @@ library
   exposed-modules:
       Comark.Parser
       Comark.Parser.Options
-  other-modules:
       Comark.Parser.Inline
       Comark.Parser.Inline.EmphLink
-      Comark.Parser.Util
       Comark.ParserCombinators
       Comark.ParserCombinators.Prim
+  other-modules:
+      Comark.Parser.Util
       Text.Html.Email.Validate
       Data.Char.Extended
       Data.Sequence.Extended
