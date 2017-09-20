@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><a name="line-2"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Text</span><span class="hs-operator">.</span><span class="hs-identifier">Html</span><span class="hs-operator">.</span><span class="hs-identifier">Entity</span><span>
+</span><a name="line-3"></a><span>    </span><span class="hs-special">(</span><span> </span><span class="hs-comment">-- * Entity lookup</span><span>
+</span><a name="line-4"></a><span>      </span><a href="Text.Html.Entity.html#entityCodePoints"><span class="hs-identifier hs-var">entityCodePoints</span></a><span>
+</span><a name="line-5"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Text.Html.Entity.html#entityChars"><span class="hs-identifier hs-var">entityChars</span></a><span>
+</span><a name="line-6"></a><span>      </span><span class="hs-comment">-- ** Entity validation</span><span>
+</span><a name="line-7"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Text.Html.Entity.html#isValidEntity"><span class="hs-identifier hs-var">isValidEntity</span></a><span>
+</span><a name="line-8"></a><span>      </span><span class="hs-comment">-- * Entity lookup by name</span><span>
+</span><a name="line-9"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Text.Html.Entity.html#entityNameCodePoints"><span class="hs-identifier hs-var">entityNameCodePoints</span></a><span>
+</span><a name="line-10"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Text.Html.Entity.html#entityNameChars"><span class="hs-identifier hs-var">entityNameChars</span></a><span>
+</span><a name="line-11"></a><span>      </span><span class="hs-comment">-- ** Entity name validation</span><span>
+</span><a name="line-12"></a><span>    </span><span class="hs-special">,</span><span> </span><a href="Text.Html.Entity.html#isValidEntityName"><span class="hs-identifier hs-var">isValidEntityName</span></a><span>
+</span><a name="line-13"></a><span>    </span><span class="hs-special">)</span><span class="hs-keyword">where</span><span>
+</span><a name="line-14"></a><span>
+</span><a name="line-15"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Applicative</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator hs-var">&lt;$&gt;</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-16"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Char</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">chr</span><span class="hs-special">)</span><span>
+</span><a name="line-17"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Map</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">M</span><span>
+</span><a name="line-18"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Set</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">S</span><span>
+</span><a name="line-19"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Text</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Text</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">pack</span><span class="hs-special">)</span><span>
+</span><a name="line-20"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Monoid</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator hs-var">&lt;&gt;</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-21"></a><span>
+</span><a name="line-22"></a><span class="hs-keyword">import</span><span> </span><a href="Text.Html.Entity.Data.html"><span class="hs-identifier">Text</span><span class="hs-operator">.</span><span class="hs-identifier">Html</span><span class="hs-operator">.</span><span class="hs-identifier">Entity</span><span class="hs-operator">.</span><span class="hs-identifier">Data</span></a><span>
+</span><a name="line-23"></a><span>
+</span><a name="line-24"></a><span class="hs-comment">-- | Given an entity looks up unicode code points that represent it.</span><span>
+</span><a name="line-25"></a><span class="hs-comment">--</span><span>
+</span><a name="line-26"></a><span class="hs-comment">-- &gt;&gt;&gt; entityCodePoints &quot;&amp;mu;&quot;</span><span>
+</span><a name="line-27"></a><span class="hs-comment">-- Just [966]</span><span>
+</span><a name="line-28"></a><span class="hs-comment">--</span><span>
+</span><a name="line-29"></a><span class="hs-comment">-- &gt;&gt;&gt; entityCodePoints &quot;&amp;nano;&quot;</span><span>
+</span><a name="line-30"></a><span class="hs-comment">-- Nothing</span><span>
+</span><a name="line-31"></a><span class="hs-identifier">entityCodePoints</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">Int</span><span class="hs-special">]</span><span>
+</span><a name="line-32"></a><a name="entityCodePoints"><a href="Text.Html.Entity.html#entityCodePoints"><span class="hs-identifier">entityCodePoints</span></a></a><span> </span><a name="local-6989586621679045681"><a href="#local-6989586621679045681"><span class="hs-identifier">ent</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">M</span><span class="hs-operator hs-var">.</span><span class="hs-identifier hs-var">lookup</span><span> </span><a href="#local-6989586621679045681"><span class="hs-identifier hs-var">ent</span></a><span> </span><a href="Text.Html.Entity.Data.html#entityMap"><span class="hs-identifier hs-var">entityMap</span></a><span>
+</span><a name="line-33"></a><span>
+</span><a name="line-34"></a><span class="hs-comment">-- | Given an entity returns it's textual representation (if any).</span><span>
+</span><a name="line-35"></a><span class="hs-comment">--</span><span>
+</span><a name="line-36"></a><span class="hs-comment">-- &gt;&gt;&gt; entityChars &quot;&amp;mu;&quot;</span><span>
+</span><a name="line-37"></a><span class="hs-comment">-- Just &quot;&#956;&quot;</span><span>
+</span><a name="line-38"></a><span class="hs-comment">-- </span><span>
+</span><a name="line-39"></a><span class="hs-comment">-- &gt;&gt;&gt; entityChars &quot;&amp;nano;&quot;</span><span>
+</span><a name="line-40"></a><span class="hs-comment">-- Nothing</span><span>
+</span><a name="line-41"></a><span class="hs-identifier">entityChars</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-42"></a><a name="entityChars"><a href="Text.Html.Entity.html#entityChars"><span class="hs-identifier">entityChars</span></a></a><span> </span><a name="local-6989586621679045682"><a href="#local-6989586621679045682"><span class="hs-identifier">ent</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">pack</span><span> </span><span class="hs-operator hs-var">&lt;$&gt;</span><span> </span><span class="hs-identifier hs-var">map</span><span> </span><span class="hs-identifier hs-var">chr</span><span> </span><span class="hs-operator hs-var">&lt;$&gt;</span><span> </span><span class="hs-identifier hs-var">M</span><span class="hs-operator hs-var">.</span><span class="hs-identifier hs-var">lookup</span><span> </span><a href="#local-6989586621679045682"><span class="hs-identifier hs-var">ent</span></a><span> </span><a href="Text.Html.Entity.Data.html#entityMap"><span class="hs-identifier hs-var">entityMap</span></a><span>
+</span><a name="line-43"></a><span>
+</span><a name="line-44"></a><span class="hs-comment">-- | Check if entity is valid (if such entity exists).</span><span>
+</span><a name="line-45"></a><span class="hs-comment">--</span><span>
+</span><a name="line-46"></a><span class="hs-comment">-- &gt;&gt;&gt; isValidEntity &quot;&amp;mu;&quot;</span><span>
+</span><a name="line-47"></a><span class="hs-comment">-- True</span><span>
+</span><a name="line-48"></a><span class="hs-comment">--</span><span>
+</span><a name="line-49"></a><span class="hs-comment">-- &gt;&gt;&gt; isValidEntity &quot;&amp;nano;&quot;</span><span>
+</span><a name="line-50"></a><span class="hs-comment">-- False</span><span>
+</span><a name="line-51"></a><span class="hs-identifier">isValidEntity</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Bool</span><span>
+</span><a name="line-52"></a><a name="isValidEntity"><a href="Text.Html.Entity.html#isValidEntity"><span class="hs-identifier">isValidEntity</span></a></a><span> </span><a name="local-6989586621679045703"><a href="#local-6989586621679045703"><span class="hs-identifier">ent</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">S</span><span class="hs-operator hs-var">.</span><span class="hs-identifier hs-var">member</span><span> </span><a href="#local-6989586621679045703"><span class="hs-identifier hs-var">ent</span></a><span> </span><a href="Text.Html.Entity.Data.html#entitySet"><span class="hs-identifier hs-var">entitySet</span></a><span>
+</span><a name="line-53"></a><span>
+</span><a name="line-54"></a><span>
+</span><a name="line-55"></a><span class="hs-identifier">nameToEntity</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-56"></a><a name="nameToEntity"><a href="Text.Html.Entity.html#nameToEntity"><span class="hs-identifier">nameToEntity</span></a></a><span> </span><a name="local-6989586621679045704"><a href="#local-6989586621679045704"><span class="hs-identifier">name</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-string">&quot;&amp;&quot;</span><span> </span><span class="hs-operator hs-var">&lt;&gt;</span><span> </span><a href="#local-6989586621679045704"><span class="hs-identifier hs-var">name</span></a><span> </span><span class="hs-operator hs-var">&lt;&gt;</span><span> </span><span class="hs-string">&quot;;&quot;</span><span>
+</span><a name="line-57"></a><span>
+</span><a name="line-58"></a><span class="hs-comment">-- | Given a name of entity looks up code points that represent it.</span><span>
+</span><a name="line-59"></a><span class="hs-comment">--</span><span>
+</span><a name="line-60"></a><span class="hs-comment">-- &gt;&gt;&gt; entityNameCodePoints &quot;mu&quot;</span><span>
+</span><a name="line-61"></a><span class="hs-comment">-- Just [966]</span><span>
+</span><a name="line-62"></a><span class="hs-comment">--</span><span>
+</span><a name="line-63"></a><span class="hs-comment">-- &gt;&gt;&gt; entityNameCodePoints &quot;nano&quot;</span><span>
+</span><a name="line-64"></a><span class="hs-comment">-- Nothing</span><span>
+</span><a name="line-65"></a><span class="hs-identifier">entityNameCodePoints</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-special">[</span><span class="hs-identifier hs-type">Int</span><span class="hs-special">]</span><span>
+</span><a name="line-66"></a><a name="entityNameCodePoints"><a href="Text.Html.Entity.html#entityNameCodePoints"><span class="hs-identifier">entityNameCodePoints</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Text.Html.Entity.html#entityCodePoints"><span class="hs-identifier hs-var">entityCodePoints</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Text.Html.Entity.html#nameToEntity"><span class="hs-identifier hs-var">nameToEntity</span></a><span>
+</span><a name="line-67"></a><span>
+</span><a name="line-68"></a><span class="hs-comment">-- | Given a name of entity returns it's textual representation (if any).</span><span>
+</span><a name="line-69"></a><span class="hs-comment">--</span><span>
+</span><a name="line-70"></a><span class="hs-comment">-- &gt;&gt;&gt; entityNameChars &quot;mu&quot;</span><span>
+</span><a name="line-71"></a><span class="hs-comment">-- Just &quot;&#956;&quot;</span><span>
+</span><a name="line-72"></a><span class="hs-comment">-- </span><span>
+</span><a name="line-73"></a><span class="hs-comment">-- &gt;&gt;&gt; entityNameChars &quot;nano&quot;</span><span>
+</span><a name="line-74"></a><span class="hs-comment">-- Nothing</span><span>
+</span><a name="line-75"></a><span class="hs-identifier">entityNameChars</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-76"></a><a name="entityNameChars"><a href="Text.Html.Entity.html#entityNameChars"><span class="hs-identifier">entityNameChars</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Text.Html.Entity.html#entityChars"><span class="hs-identifier hs-var">entityChars</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Text.Html.Entity.html#nameToEntity"><span class="hs-identifier hs-var">nameToEntity</span></a><span>
+</span><a name="line-77"></a><span>
+</span><a name="line-78"></a><span class="hs-comment">-- | Check if entity name is valid (if corresponding entity exists).</span><span>
+</span><a name="line-79"></a><span class="hs-comment">--</span><span>
+</span><a name="line-80"></a><span class="hs-comment">-- &gt;&gt;&gt; isValidEntityName &quot;mu&quot;</span><span>
+</span><a name="line-81"></a><span class="hs-comment">-- True</span><span>
+</span><a name="line-82"></a><span class="hs-comment">--</span><span>
+</span><a name="line-83"></a><span class="hs-comment">-- &gt;&gt;&gt; isValidEntityName &quot;nano&quot;</span><span>
+</span><a name="line-84"></a><span class="hs-comment">-- False</span><span>
+</span><a name="line-85"></a><span class="hs-identifier">isValidEntityName</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Bool</span><span>
+</span><a name="line-86"></a><a name="isValidEntityName"><a href="Text.Html.Entity.html#isValidEntityName"><span class="hs-identifier">isValidEntityName</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Text.Html.Entity.html#isValidEntity"><span class="hs-identifier hs-var">isValidEntity</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Text.Html.Entity.html#nameToEntity"><span class="hs-identifier hs-var">nameToEntity</span></a><span>
+</span><a name="line-87"></a></pre></body></html>
