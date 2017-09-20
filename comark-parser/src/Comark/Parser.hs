@@ -440,7 +440,7 @@ processLine (lineNumber, txt) = do
                   , ct /= IndentedCode
                   -> addLeaf lineNumber (TextLine t)
 
-              -- A special case: Lazy continuation of a list item looking like
+              -- Special case: Lazy continuation of a list item looking like
               -- indented code e.g:
               -- "  1.  Paragraph"
               -- "    with two lines"
