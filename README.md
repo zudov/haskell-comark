@@ -60,6 +60,8 @@ markdownToHtml =
   Comark.render . Comark.parse [ Comark.Normalize ]
 ```
 
+You can find examples of more complex transformations in [comark-examples](./comark-examples).
+And make sure to checkout the docs.
 
 # TODO
 
