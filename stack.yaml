@@ -1,0 +1,14 @@
+resolver: lts-9.5
+packages:
+    - ./comark
+    - ./comark-syntax
+    - ./comark-parser
+    - ./comark-html
+    - location: ./comark-testutils
+      extra-dep: true
+    - location: ./comark-examples
+      extra-dep: true
+extra-deps:
+    - html5-entity-0.2.0.3
+    - control-bool-0.2.1
+    - cmark-0.5.6
