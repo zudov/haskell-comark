@@ -282,15 +282,15 @@ pEmphLinkDelim = asum
 pEmphTokens :: ParserOptions -> Parser DelimStack
 pEmphTokens opts = do
   delim <- pEmphLinkDelim
-  foldP
-    (\ds -> (Just <$> step ds) <|> (Nothing <$ endOfInput))
-    (Seq.singleton delim)
+  foldP step (Seq.singleton delim)
   where
     step ds = asum
-      [ char ']' *> lookForLinkOrImage ds
-      , (ds |>) <$> pEmphLinkDelim
-      , addInlines ds
-          <$> pInline opts { _poParseEmphasis = False }
+      [ Just <$> asum
+          [ char ']' *> lookForLinkOrImage ds
+          , (ds |>) <$> pEmphLinkDelim
+          , addInlines ds <$> pInline opts { _poParseEmphasis = False }
+          ]
+      , Nothing <$ endOfInput
       ]
 
     lookForLinkOrImage :: DelimStack -> Parser DelimStack
