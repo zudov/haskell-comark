@@ -132,7 +132,7 @@ pCode = singleton <$> do
   let pEndTicks = string startTicks <* notFollowedBy (char '`')
       pContent  = code <$> (codechunk `manyTill` pEndTicks)
       fallback  = Str startTicks
-  pContent <|> pure fallback
+  option fallback pContent
   where
     code      = Code . Text.strip . Text.concat
     codechunk = backtickChunk <|> nonBacktickChunk <|> spaceChunk
