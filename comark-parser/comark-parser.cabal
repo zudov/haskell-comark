@@ -27,6 +27,7 @@ library
       Comark.ParserCombinators
       Comark.ParserCombinators.Prim
   other-modules:
+      Comark.Parser.Reference
       Comark.Parser.Util
       Text.Html.Email.Validate
       Data.Char.Extended

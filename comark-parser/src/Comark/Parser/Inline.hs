@@ -14,9 +14,10 @@ module Comark.Parser.Inline
 
 import Prelude hiding (takeWhile)
 
-import           Control.Applicative
-import           Control.Bool
-import           Control.Monad          hiding (mapM_)
+import Control.Applicative
+import Control.Bool
+import Control.Monad       hiding (mapM_)
+
 import           Data.Char.Extended
 import           Data.Foldable          (asum)
 import           Data.List              (foldl')
@@ -32,6 +33,7 @@ import qualified Data.Text.Lazy.Builder as Text.Lazy.Builder
 
 import Comark.Parser.Inline.EmphLink
 import Comark.Parser.Options         (ParserOptions(..))
+import Comark.Parser.Reference
 import Comark.Parser.Util
 import Comark.ParserCombinators
 import Comark.Syntax
@@ -302,10 +304,10 @@ pEmphTokens opts = do
           where
             fallback =
               addInlines prefix (unLinkOpen opener) <> addInline suffix closer
-            constr =
+            constr (runLinkDestination -> d) (fmap runLinkTitle -> t) =
               case linkOpenerType opener of
-                LinkOpener  -> Link
-                ImageOpener -> Image
+                LinkOpener  -> Link content d t
+                ImageOpener -> Image content d t
             deactivating =
               case linkOpenerType opener of
                 LinkOpener  -> fmap deactivate
@@ -315,24 +317,22 @@ pEmphTokens opts = do
                 $ processEmphTokens
                 $ InlineToken (linkContent opener) <| suffix
             pLink =
-              pInlineLink constr content
-                <|> pReferenceLink constr content (linkLabel opener)
+              pInlineLink constr <|> pReferenceLink constr (linkLabel opener)
         Just (_, _, _) ->
           error "lookForLinkOrImage: impossible happened. expected LinkOpenToken"
       where
         closer = Str "]"
 
-    pInlineLink constr content = do
+    pInlineLink constr = do
       char '(' *> optional pWhitespace
       dest <- option "" pLinkDest
       title <- optional (pWhitespace *> pLinkTitle <* optional pWhitespace)
       char ')'
-      pure $ singleton $ constr content dest title
-
-    pReferenceLink constr content lbl = do
-      ref <- (Just <$> pLinkLabel) <|> (lbl <$ optional "[]")
-      maybe mzero (pure . singleton . uncurry (constr content))
-                  (_poLinkReferences opts =<< ref)
+      pure $ singleton $ constr dest title
+    pReferenceLink constr lbl = do
+      Just ref <- (Just <$> pLinkLabel) <|> (lbl <$ optional "[]")
+      Just link <- pure $ _poLinkReferences opts ref
+      pure $ singleton $ uncurry constr link
 
 pEmphLink :: ParserOptions -> Parser (Inlines Text)
 pEmphLink opts =
@@ -402,16 +402,17 @@ emph n content
    single f is =
      f is <$ guard (not $ Seq.null is)
 
-pLinkLabel :: Parser Text
-pLinkLabel = char '[' *> (Text.concat <$> someTill chunk (char ']'))
+pLinkLabel :: Parser LinkText
+pLinkLabel =
+  char '[' *> (LinkText . Text.concat <$> someTill chunk (char ']'))
   where
     chunk          = regChunk <|> bracketChunk <|> backslashChunk
     regChunk       = takeWhile1 (`notElem` ("[]\\" :: [Char]))
     bracketChunk   = char '\\' *> ("[" <|> "]")
     backslashChunk = "\\\\"
 
-pLinkDest :: Parser Text
-pLinkDest = pointy <|> nonPointy
+pLinkDest :: Parser LinkDestination
+pLinkDest = LinkDestination <$> (pointy <|> nonPointy)
   where
     pointy = char '<' *> (Text.concat <$> many chunk) <* char '>'
       where
@@ -430,8 +431,8 @@ pLinkDest = pointy <|> nonPointy
               manyTill chunk (char ')')
           ]
 
-pLinkTitle :: Parser Text
-pLinkTitle = surroundedWith ("('\"'" :: [Char])
+pLinkTitle :: Parser LinkTitle
+pLinkTitle = LinkTitle <$> surroundedWith ("('\"'" :: [Char])
   where
     surroundedWith openers = do
       opener <- satisfy (`elem` openers)
@@ -446,10 +447,10 @@ pLinkTitle = surroundedWith ("('\"'" :: [Char])
           nestedChunk = parenthesize <$> surroundedWith "("
       Text.concat <$> manyTill (regChunk <|> nestedChunk) pEnder
 
-pReference :: Parser (Text, Text, Maybe Text)
+pReference :: Parser (LinkText, LinkDestination, Maybe LinkTitle)
 pReference = do
   lab <- pLinkLabel <* char ':'
-  guard $ isJust $ Text.find (not . isWhitespace) lab
+  guard $ isJust $ Text.find (not . isWhitespace) $ runLinkText lab
   scanWhitespaceNL
   url <- pLinkDest <* skipWhile whitespaceNoNL
   titleOnNewLine <- isJust <$> optional pLineEnding

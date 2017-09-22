@@ -22,6 +22,7 @@ import           Data.Char
 import           Data.Either
 import           Data.Foldable
 import           Data.List                      (intercalate)
+import           Data.Map                       (Map)
 import qualified Data.Map                       as Map
 import           Data.Maybe                     (mapMaybe)
 import           Data.Monoid
@@ -34,6 +35,7 @@ import qualified Data.Text.Extended             as Text
 
 import Comark.Parser.Inline
 import Comark.Parser.Options
+import Comark.Parser.Reference
 import Comark.Parser.Util
 import Comark.ParserCombinators
 import Comark.Syntax
@@ -51,7 +53,8 @@ parse (parserOptions -> opts) text =
   where
     extendRefmap refmap =
       opts { _poLinkReferences =
-               \t -> lookupLinkReference refmap t <|> _poLinkReferences opts t
+               \t -> Map.lookup (toLinkLabel t) refmap
+                      <|> _poLinkReferences opts t
            }
 
 -- General parsing strategy:
@@ -89,9 +92,10 @@ data ContainerStack
 
 type LineNumber = Int
 
-data Elt = C Container
-         | L LineNumber Leaf
-         deriving (Show)
+data Elt
+  = C Container
+  | L LineNumber Leaf
+  deriving (Show)
 
 data Container =
   Container
@@ -145,6 +149,8 @@ pptElt :: Elt -> String
 pptElt (C c)              = show c
 pptElt (L _ (TextLine s)) = show s
 pptElt (L _ lf)           = show lf
+
+type ReferenceMap = Map LinkLabel (LinkDestination, Maybe LinkTitle)
 
 -- | Scanners that must be satisfied if the current open container is to be
 --   continued on a new line (ignoring lazy continuations).
@@ -213,30 +219,21 @@ closeStack =
 closeContainer :: ContainerM ()
 closeContainer =
   get >>= \case
-    ContainerStack top@(Container Reference cs'') rest ->
-      case runParser ((,) <$> pReference <*> untilTheEnd) input of
+    ContainerStack top@(Container Reference cs'') (Container ct' cs' : rs) ->
+      case runParserWithUnconsumed pReference input of
         Right ((lab, lnk, tit), unconsumed) -> do
-          tell (Map.singleton (normalizeReference lab) (lnk, tit))
-          case rest of
-            (Container ct' cs' : rs)
-              | Text.null unconsumed ->
-                  put $ ContainerStack (Container ct' (rest' <> cs' |> C top)) rs
-              | otherwise ->
-                  let children = (L (-1) (TextLine unconsumed) <| rest') >< (cs' |> C top)
-                  in put $ ContainerStack (Container ct' children) rs
-            [] -> pure ()
+          tell $ Map.singleton (toLinkLabel lab) (lnk, tit)
+          let cs | Text.null unconsumed = rest'
+                 | otherwise = L (-1) (TextLine unconsumed) <| rest'
+          put $ ContainerStack (Container ct' (cs <> cs' |> C top)) rs
         Left _ ->
-          case rest of
-            (Container ct' cs' : rs) ->
-                put $ ContainerStack (Container ct' (cs' <> cs'')) rs
-            [] -> return ()
+          put $ ContainerStack (Container ct' (cs' <> cs'')) rs
       where
         input = Text.strip $ Text.joinLines $ map extractText $ toList textlines
         (textlines, rest') = Seq.spanl isTextLine cs''
 
-    ContainerStack top rest
+    ContainerStack top (Container ct' cs' : rs)
       | Container li@ListItem{} (viewr -> zs :> b) <- top
-      , Container ct' cs' : rs <- rest
       , isBlankLine b ->
           let els = if null zs
                     then cs' |> C (Container li zs)

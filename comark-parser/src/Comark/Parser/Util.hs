@@ -14,9 +14,6 @@ module Comark.Parser.Util
   , isUnicodeWhitespace
   , isAsciiPunctuation
   , satisfyUpTo
-  , lookupLinkReference
-  , ReferenceMap
-  , normalizeReference
   , parenthesize
   ) where
 
@@ -24,8 +21,6 @@ import           Control.Applicative
 import           Control.Bool
 import           Control.Monad
 import           Data.Char
-import           Data.Map            (Map)
-import qualified Data.Map            as Map
 import           Data.Monoid
 import           Data.Text           (Text)
 import qualified Data.Text.Extended  as Text
@@ -34,8 +29,6 @@ import           Prelude             hiding (takeWhile)
 import Comark.ParserCombinators
 
 type Scanner = Parser ()
-
-type ReferenceMap = Map Text (Text,Maybe Text)
 
 -- | Predicate for line ending character (newline or carriage return).
 --   NB: something like `satisfy isLineEnding` won't properly parse a
@@ -96,16 +89,6 @@ satisfyUpTo :: Int -> (Char -> Bool) -> Parser Text
 satisfyUpTo cnt f =
   scan 0 $ \n c ->
     n + 1 <$ guard (n < cnt && f c)
-
-lookupLinkReference
-  :: ReferenceMap
-  -> Text                -- reference label
-  -> Maybe (Text, Maybe Text)  -- (url, title)
-lookupLinkReference refmap key =
-  Map.lookup (normalizeReference key) refmap
-
-normalizeReference :: Text -> Text
-normalizeReference = Text.toCaseFold . Text.concat . Text.split isSpace
 
 parenthesize :: Text -> Text
 parenthesize x = "(" <> x <> ")"

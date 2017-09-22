@@ -9,7 +9,8 @@ module Comark.Parser.Options
 
 import Control.Applicative ((<|>))
 import Data.Monoid         (Endo(Endo, appEndo))
-import Data.Text           (Text)
+
+import Comark.Parser.Reference
 
 data ParserOption
   = -- | Consolidate adjacent text nodes.
@@ -29,11 +30,11 @@ data ParserOption
     --   the document.
     --
     --   TODO: Examples
-  | LinkReferences (Text -> Maybe (Text, Maybe Text))
+  | LinkReferences (LinkText -> Maybe (LinkDestination, Maybe LinkTitle))
 
 data ParserOptions = ParserOptions
     { _poNormalize      :: Bool
-    , _poLinkReferences :: Text -> Maybe (Text, Maybe Text)
+    , _poLinkReferences :: LinkText -> Maybe (LinkDestination, Maybe LinkTitle)
     , _poParseEmphasis  :: Bool
     }
 

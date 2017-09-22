@@ -7,6 +7,7 @@ module Comark.Parser.Inline.EmphLink where
 import           Data.Text (Text)
 import qualified Data.Text as Text
 
+import Comark.Parser.Reference
 import Comark.Syntax
 
 import Data.Sequence (Seq, ViewR(..), singleton, viewr, (<|), (><), (|>))
@@ -33,7 +34,7 @@ data LinkOpen
   = LinkOpen
       { linkOpenerType :: OpenerType
       , linkActive     :: Bool
-      , linkLabel      :: Maybe Text
+      , linkLabel      :: Maybe LinkText
       , linkContent    :: Inlines Text
       }
   deriving (Show, Eq)
