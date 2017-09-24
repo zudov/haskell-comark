@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.17.1.
+-- This file has been generated from package.yaml by hpack version 0.17.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -35,6 +35,8 @@ library
     , text
     , comark-syntax
     , transformers
+    , syb
+    , containers
   if flag(dump-core)
     ghc-options: -fplugin=DumpCore -fplugin-opt DumpCore:core-html
     build-depends:
@@ -42,7 +44,7 @@ library
   exposed-modules:
       Comark.Html
   other-modules:
-      Comark.Html.Safe
+      Comark.Html.Sanitize
       Paths_comark_html
   default-language: Haskell2010
 

@@ -22,6 +22,8 @@ library:
   - text
   - comark-syntax
   - transformers
+  - syb
+  - containers
 executables:
   comark-html-profile:
     main: Main.hs
