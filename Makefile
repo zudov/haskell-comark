@@ -1,6 +1,7 @@
 # Generating parsable version of spec (needed to build testutils)
 comark-testutils/spec.json:
-	./spec/test/spec_tests.py -s spec/spec.txt --dump-tests > comark-testutils/spec.json
+	cd spec && make spec.json
+	cp spec/spec.json comark-testutils/spec.json
 
 spec: comark-testutils/spec.json
 
