@@ -1,6 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.17.0.
+-- This file has been generated from package.yaml by hpack version 0.20.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: e02a5b900040c560afdd45cf1105e1344d8b3018e5fe95fbff4463b91b67843f
 
 name:                comark-parser
 version:             0.1.0
@@ -36,12 +38,12 @@ library
       Paths_comark_parser
   other-extensions: OverloadedStrings TupleSections TupleSections ViewPatterns OverloadedStrings LambdaCase RecordWildCards
   build-depends:
-      text
+      base >=4.7 && <5.0
     , comark-syntax
-    , base >=4.7 && <5.0
-    , html5-entity >=0.2.0.1
-    , control-bool
     , containers
+    , control-bool
+    , html5-entity >=0.2.0.1
+    , text
     , transformers
   default-language: Haskell2010
   ghc-options: -Wall
@@ -53,20 +55,21 @@ test-suite test
   other-modules:
       Blocks
       Inline
+      Paths_comark_parser
   type: exitcode-stdio-1.0
   ghc-options: -Wall
   build-depends:
-      text
-    , comark-syntax
+      QuickCheck
     , base >=4.7
+    , cmark
+    , comark-parser
+    , comark-syntax
+    , comark-testutils
+    , containers
+    , deepseq
     , hspec
     , syb
-    , QuickCheck
-    , deepseq
-    , containers
-    , comark-parser
-    , comark-testutils
-    , cmark
+    , text
   default-language: Haskell2010
 
 benchmark bench
@@ -75,13 +78,15 @@ benchmark bench
       bench/
   main-is: Main.hs
   build-depends:
-      text
-    , comark-syntax
-    , base >=4.7 && <5
-    , criterion
-    , comark-testutils
+      base >=4.7 && <5
     , comark-parser
+    , comark-syntax
+    , comark-testutils
+    , criterion
     , deepseq
     , file-embed
+    , text
+  other-modules:
+      Paths_comark_parser
   default-language: Haskell2010
   ghc-options: -O2

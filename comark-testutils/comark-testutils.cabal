@@ -1,6 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.17.0.
+-- This file has been generated from package.yaml by hpack version 0.20.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: c2124ec635b6c9d89397bb48b1842eead3cd0290c88d23eed9d3453084824814
 
 name:                comark-testutils
 version:             0.1.0
@@ -18,6 +20,9 @@ cabal-version:       >= 1.10
 extra-source-files:
     README.md
 
+data-files:
+    spec.json
+
 library
   exposed-modules:
       Comark.TestUtils.CMark
@@ -28,15 +33,15 @@ library
       Paths_comark_testutils
   other-extensions: TemplateHaskell OverloadedStrings FlexibleInstances
   build-depends:
-      base >=4.7 && <5.0
-    , containers
-    , text
-    , cmark >=0.4.0.1
-    , aeson
+      aeson
+    , base >=4.7 && <5.0
     , bytestring
-    , template-haskell
+    , cmark >=0.4.0.1
     , comark-syntax
+    , containers
     , file-embed
+    , template-haskell
+    , text
   hs-source-dirs:
       src/
   ghc-options: -Wall

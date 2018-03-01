@@ -1,6 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.17.0.
+-- This file has been generated from package.yaml by hpack version 0.20.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: 6eb5a74f0981657dca8037d444f675e73e4c020edbf3c8f01218223dd2b58d20
 
 name:           comark-examples
 version:        0.1.0
@@ -24,15 +26,17 @@ executable comark-examples-github_urls
   hs-source-dirs:
       src
   build-depends:
-      base >= 4.7 && < 5
-    , syb
-    , text
-    , highlighting-kate
+      base >=4.7 && <5
     , blaze-html
     , comark
-    , comark-syntax
-    , comark-parser
     , comark-html
+    , comark-parser
+    , comark-syntax
+    , highlighting-kate
+    , syb
+    , text
+  other-modules:
+      Paths_comark_examples
   default-language: Haskell2010
 
 executable comark-examples-highlight
@@ -40,15 +44,17 @@ executable comark-examples-highlight
   hs-source-dirs:
       src
   build-depends:
-      base >= 4.7 && < 5
-    , syb
-    , text
-    , highlighting-kate
+      base >=4.7 && <5
     , blaze-html
     , comark
-    , comark-syntax
-    , comark-parser
     , comark-html
+    , comark-parser
+    , comark-syntax
+    , highlighting-kate
+    , syb
+    , text
+  other-modules:
+      Paths_comark_examples
   default-language: Haskell2010
 
 executable comark-examples-mark2html
@@ -56,13 +62,15 @@ executable comark-examples-mark2html
   hs-source-dirs:
       src
   build-depends:
-      base >= 4.7 && < 5
-    , syb
-    , text
-    , highlighting-kate
+      base >=4.7 && <5
     , blaze-html
     , comark
-    , comark-syntax
-    , comark-parser
     , comark-html
+    , comark-parser
+    , comark-syntax
+    , highlighting-kate
+    , syb
+    , text
+  other-modules:
+      Paths_comark_examples
   default-language: Haskell2010

@@ -1,6 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.17.0.
+-- This file has been generated from package.yaml by hpack version 0.20.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: d8cff47a5174c87d3d9cf1357a48faf9fedc17540996869770a8bff50c9cfa87
 
 name:           comark-syntax
 version:        0.1.0
