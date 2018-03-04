@@ -40,9 +40,9 @@ import           Prelude             hiding (takeWhile)
 
 data Position
   = Position
-      { line   :: Int
-      , column :: Int
-      , point  :: Int
+      { line   :: {-# UNPACK #-} !Int
+      , column :: {-# UNPACK #-} !Int
+      , point  :: {-# UNPACK #-} !Int
       } deriving (Ord, Eq)
 
 instance Show Position where
@@ -57,9 +57,9 @@ data ParseError
 
 data ParserState
   = ParserState
-      { subject  :: Text
-      , position :: Position
-      , lastChar :: Maybe Char
+      { subject  :: {-# UNPACK #-} !Text
+      , position :: {-# UNPACK #-} !Position
+      , lastChar :: !(Maybe Char)
       }
 
 advance :: ParserState -> Text -> ParserState
