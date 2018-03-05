@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e02a5b900040c560afdd45cf1105e1344d8b3018e5fe95fbff4463b91b67843f
+-- hash: 898ed8ae90d42c85336fb195105546802f7bb25e48eac87aa45f8c901d8a054e
 
 name:                comark-parser
 version:             0.1.0
@@ -79,6 +79,7 @@ benchmark bench
   main-is: Main.hs
   build-depends:
       base >=4.7 && <5
+    , cmark
     , comark-parser
     , comark-syntax
     , comark-testutils

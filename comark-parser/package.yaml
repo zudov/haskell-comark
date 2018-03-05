@@ -61,5 +61,6 @@ benchmarks:
     - criterion
     - comark-testutils
     - comark-parser
+    - cmark
     - deepseq
     - file-embed
