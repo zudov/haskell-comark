@@ -4,31 +4,33 @@
 module Main where
 
 import           Control.Arrow      (second)
-import           Control.DeepSeq
 import           Criterion.Main
 import           Data.FileEmbed
-import           Data.Foldable
 import           Data.Monoid
 import           Data.Text          (Text)
 import qualified Data.Text          as Text
 import qualified Data.Text.Encoding as Text
 
-import qualified Comark.Parser         as Comark
-import qualified Comark.Parser.Options as Comark
-import qualified Comark.Syntax         as Comark
+import qualified CMark
+
+import qualified Comark.Parser as Comark
+
 
 samples :: [(FilePath, Text)]
 samples = map (second Text.decodeUtf8) $(embedDir "bench/samples/")
 
 main :: IO ()
 main = defaultMain
-  [ bgroup "pathological with normalization"           $ benches [Comark.Normalize] pathological
-  , bgroup "pathological without normalization"        $ benches [] pathological
-  , bgroup "markdown-it samples with normalization"    $ benches [Comark.Normalize] samples
-  , bgroup "markdown-it samples without normalization" $ benches [] samples
+  [ bgroup "pathological inputs" $ benches pathological
+  , bgroup "markdown-it samples" $ benches samples
   ]
 
-benches opts = map (\(n,c) -> bench n $ nf (Comark.parse opts) c)
+benches :: [(String,Text)] -> [Benchmark]
+benches =
+  concatMap $ \(n,c) ->
+    [ bench ("cmark: " <> n) $ whnf (CMark.commonmarkToNode []) c
+    , bench ("comark: " <> n) $ nf (Comark.parse []) c
+    ]
 
 pathological :: [(String, Text)]
 pathological =
